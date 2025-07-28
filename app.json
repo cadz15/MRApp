@@ -3,7 +3,7 @@
     "name": "MRApp",
     "slug": "MRApp",
     "version": "1.0.0",
-    "orientation": "portrait",
+    "orientation": "landscape",
     "icon": "./assets/images/icon.png",
     "scheme": "mrapp",
     "userInterfaceStyle": "automatic",
@@ -32,6 +32,12 @@
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
+        }
+      ],
+      [
+        "expo-screen-orientation",
+        {
+          "initialOrientation": "LANDSCAPE"
         }
       ]
     ],
