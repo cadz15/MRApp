@@ -20,11 +20,9 @@ const AppButton = ({
   return (
     <>
       {asLink === true ? (
-        <Link
-          href={link}
-          onPress={onPress}
-          style={[styles.button, style]}
-        ></Link>
+        <Link href={link} onPress={onPress} style={[styles.button, style]}>
+          {children}
+        </Link>
       ) : (
         <TouchableOpacity onPress={onPress} style={[styles.button, style]}>
           {children}

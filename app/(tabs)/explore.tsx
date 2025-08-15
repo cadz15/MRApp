@@ -61,9 +61,9 @@ export default function TabTwoScreen() {
 
         <AppButton
           onPress={() => {}}
-          asLink={false}
+          asLink={true}
           style={styles.button}
-          link={null}
+          link={"/pages/salesorder"}
         >
           <FontAwesome6 name="add" size={24} color={styles.popularCardText} />
           <Text style={[styles.buttonText, styles.popularCardText]}>

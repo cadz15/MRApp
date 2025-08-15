@@ -23,6 +23,14 @@ export default function RootLayout() {
       <StatusBar hidden />
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="pages/salesorder"
+          options={{
+            presentation: "modal",
+            headerTitleStyle: { fontFamily: "mon-sb" },
+            animation: "slide_from_right",
+          }}
+        />
         <Stack.Screen name="+not-found" />
       </Stack>
     </SafeAreaView>
