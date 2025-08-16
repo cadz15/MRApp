@@ -26,7 +26,23 @@ export default function RootLayout() {
         <Stack.Screen
           name="pages/salesorder"
           options={{
-            presentation: "modal",
+            headerShown: false,
+            headerTitleStyle: { fontFamily: "mon-sb" },
+            animation: "slide_from_right",
+          }}
+        />
+        <Stack.Screen
+          name="pages/createsale"
+          options={{
+            headerShown: false,
+            headerTitleStyle: { fontFamily: "mon-sb" },
+            animation: "slide_from_right",
+          }}
+        />
+        <Stack.Screen
+          name="salesorder/[id]"
+          options={{
+            headerShown: false,
             headerTitleStyle: { fontFamily: "mon-sb" },
             animation: "slide_from_right",
           }}

@@ -93,7 +93,11 @@ const AppTable = () => {
           ))}
         </View>
         <View style={styles.tableBody}>
-          <FlatList data={data} renderItem={renderItem} />
+          <FlatList
+            data={data}
+            renderItem={renderItem}
+            keyExtractor={(item, index) => index.toString()}
+          />
         </View>
       </View>
     </View>
