@@ -1,4 +1,5 @@
 export const routes = {
+  medRep: `${process.env.EXPO_PUBLIC_API_LINK}/medrep`,
   customers: `${process.env.EXPO_PUBLIC_API_LINK}/customers`,
   customersCreate: `${process.env.EXPO_PUBLIC_API_LINK}/customers`,
   items: `${process.env.EXPO_PUBLIC_API_LINK}/items`,

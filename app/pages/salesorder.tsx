@@ -154,7 +154,7 @@ const salesorder = () => {
             enabled={!isLoadingRegion}
           >
             {regionList ? (
-              regionList.map((region) => (
+              regionList.map((region: typeof regionList) => (
                 <Picker.Item label={region} value={region} key={region} />
               ))
             ) : (
@@ -172,7 +172,7 @@ const salesorder = () => {
             enabled={!isLoadingAddress}
           >
             {addressList ? (
-              addressList.map((address) => (
+              addressList.map((address: typeof addressList) => (
                 <Picker.Item
                   key={address.id}
                   label={address.address}
@@ -194,13 +194,15 @@ const salesorder = () => {
             enabled={!isLoadingCustomer}
           >
             {customersList ? (
-              customersList.map((customer, index) => (
-                <Picker.Item
-                  label={customer.name}
-                  value={customer.id}
-                  key={index}
-                />
-              ))
+              customersList.map(
+                (customer: typeof customersList, index: number) => (
+                  <Picker.Item
+                    label={customer.name}
+                    value={customer.id}
+                    key={index}
+                  />
+                )
+              )
             ) : (
               <Picker.Item label={"Loading..."} value={0} key={0} />
             )}

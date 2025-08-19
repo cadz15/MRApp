@@ -1,16 +1,33 @@
 import { routes } from "@/constants/Routes";
 import { eq, inArray } from "drizzle-orm";
 import { getDB } from "./db";
-import { customers, items, salesOrderItems, salesOrders } from "./schema";
+import {
+  customers,
+  items,
+  medrep,
+  salesOrderItems,
+  salesOrders,
+} from "./schema";
 
 const API_BASE = process.env.EXPO_PUBLIC_API_LINK;
 
 /**
  * Safe fetch helper that catches API/network errors
  */
-async function safeFetch(url: string) {
+async function safeFetch(url: string, type = "get") {
+  const db = await getDB();
+  const medRepData = await getMedRepData();
+
   try {
-    const res = await fetch(url);
+    const res = await fetch(url, {
+      method: type,
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        "X-API-KEY": `${medRepData[0]?.apiKey}`,
+        "X-API-APP-KEY": `${medRepData[0]?.salesOrderAppId}`,
+      },
+    });
 
     if (!res.ok) {
       console.warn(`⚠️ API responded with ${res.status} at ${url}`);
@@ -305,6 +322,19 @@ export async function syncLocalCustomers() {
       console.error(`❌ Sync error for customer ${cust.id}:`, err);
     }
   }
+}
+
+export async function getMedRepData() {
+  const db = await getDB();
+
+  const result = await db
+    .select({
+      apiKey: medrep.apiKey,
+      salesOrderAppId: medrep.salesOrderAppId,
+    })
+    .from(medrep);
+
+  return result;
 }
 
 export async function syncDownData() {

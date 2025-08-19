@@ -1,7 +1,7 @@
 import { DBProvider } from "@/context/DBProvider";
 import { useFonts } from "expo-font";
 import "react-native-reanimated";
-import CheckAPI from "./checkAPI";
+import CheckAPI from "./CheckAPI";
 
 export default function RootLayout() {
   const [loaded] = useFonts({
