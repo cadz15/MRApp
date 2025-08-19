@@ -1,71 +1,86 @@
+import { formattedCurrency } from "@/constants/Currency";
+import { useDB } from "@/context/DBProvider";
+import { customers } from "@/OfflineDB/schema";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import React from "react";
-import { FlatList, StyleSheet, Text, TextInput, View } from "react-native";
+import React, { useEffect, useState } from "react";
+import {
+  FlatList,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 
-const data = [
-  {
-    customer: "Dra. Rosa Roso",
-    date: "June 1, 1990",
-    sales: 1000,
-  },
-  {
-    customer: "Dra. Rosa Roso",
-    date: "June 1, 1990",
-    sales: 1000,
-  },
-  {
-    customer: "Dra. Rosa Roso",
-    date: "June 1, 1990",
-    sales: 1000,
-  },
-  {
-    customer: "Dra. Rosa Roso",
-    date: "June 1, 1990",
-    sales: 1000,
-  },
-  {
-    customer: "Dra. Rosa Roso",
-    date: "June 1, 1990",
-    sales: 1000,
-  },
-  {
-    customer: "Dra. Rosa Roso",
-    date: "June 1, 1990",
-    sales: 1000,
-  },
-];
+type TableDataType = {
+  orderId: number;
+  total: number;
+  customerId: number;
+  customerName: string;
+  dateSold: string;
+};
+
+type RenderPropType = {
+  item: TableDataType;
+  index: number;
+};
 
 const headers = ["Customer", "Date", "Total Sales"];
 
 const AppTable = () => {
-  const renderItem = ({ item, index }) => (
+  const [salesOrders, setSalesOrders] = useState<any>([]);
+  const [isRefreshing, setIsRefreshing] = useState(true);
+  const db = useDB();
+
+  async function loadSalesOrder() {
+    const latestSalesOrder = await db
+      .select({
+        orderId: salesOrders.id,
+        total: salesOrders.total,
+        customerId: salesOrders.customerId,
+        customerName: customers.name,
+        dateSold: salesOrders.dateSold,
+      })
+      .from(customers);
+
+    setSalesOrders(latestSalesOrder);
+  }
+
+  const renderItem = ({ item, index }: RenderPropType) => (
     <View style={styles.tableRow}>
       <Text
         style={[
           styles.tableBodyText,
-          index !== data.length - 1 ? styles.tableBorderBottom : null,
+          index !== salesOrders.length - 1 ? styles.tableBorderBottom : null,
         ]}
       >
-        {item.customer}
+        {item.customerName}
       </Text>
       <Text
         style={[
           styles.tableBodyText,
-          index !== data.length - 1 ? styles.tableBorderBottom : null,
+          index !== salesOrders.length - 1 ? styles.tableBorderBottom : null,
         ]}
       >
-        {item.date}
+        {item.dateSold}
       </Text>
       <Text
         style={[
           styles.tableBodyText,
-          index !== data.length - 1 ? styles.tableBorderBottom : null,
+          index !== salesOrders.length - 1 ? styles.tableBorderBottom : null,
         ]}
       >
-        {item.sales}
+        {formattedCurrency(item.total)}
       </Text>
     </View>
   );
+
+  useEffect(() => {
+    if (isRefreshing) {
+      loadSalesOrder();
+      setIsRefreshing(false);
+    }
+  }, [isRefreshing]);
 
   return (
     <View style={[styles.container]}>
@@ -94,9 +109,15 @@ const AppTable = () => {
         </View>
         <View style={styles.tableBody}>
           <FlatList
-            data={data}
+            data={salesOrders}
             renderItem={renderItem}
-            keyExtractor={(item, index) => index.toString()}
+            keyExtractor={(item) => item.orderId.toString()}
+            refreshControl={
+              <RefreshControl
+                onRefresh={() => setIsRefreshing(true)}
+                refreshing={isRefreshing}
+              />
+            }
           />
         </View>
       </View>

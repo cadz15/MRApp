@@ -1,5 +1,8 @@
 import AppButton from "@/components/AppButton";
+import { useDB } from "@/context/DBProvider";
+import { customers } from "@/OfflineDB/schema";
 import { Picker } from "@react-native-picker/picker";
+import { and, eq } from "drizzle-orm";
 import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
@@ -62,8 +65,50 @@ const salesorder = () => {
   const [address, setAddress] = useState("");
   const [customer, setCustomer] = useState("");
 
-  const [addressList, setAddressList] = useState([]);
-  const [customersList, setCustomersList] = useState([]);
+  const [addressList, setAddressList] = useState<any>([]);
+  const [customersList, setCustomersList] = useState<any>([]);
+  const [regionList, setRegionList] = useState<any>([]);
+
+  const [isLoadingRegion, setIsLoadingRegion] = useState(false);
+  const [isLoadingAddress, setIsLoadingAddress] = useState(false);
+  const [isLoadingCustomer, setIsLoadingCustomer] = useState(false);
+
+  const db = useDB();
+
+  const getRegions = async () => {
+    setIsLoadingRegion(true);
+    const result = await db
+      .select({ region: customers.region })
+      .from(customers)
+      .groupBy(customers.region); // ensures unique regions
+
+    return result.map((r) => r.region);
+  };
+
+  const getAddresses = async () => {
+    setIsLoadingAddress(true);
+    const result = await db
+      .select({ shortAddress: customers.shortAddress })
+      .from(customers)
+      .groupBy(customers.shortAddress); // ensures unique shortAddress
+
+    return result.map((r) => r.shortAddress);
+  };
+
+  const getCustomers = async () => {
+    setIsLoadingCustomer(true);
+    const result = await db
+      .select({
+        id: customers.id,
+        name: customers.name,
+      })
+      .from(customers)
+      .where(
+        and(eq(customers.region, region), eq(customers.shortAddress, address))
+      );
+
+    return result.map((r) => r.name);
+  };
 
   const handleCreate = () => {
     if (region && address && customer) {
@@ -72,20 +117,24 @@ const salesorder = () => {
   };
 
   useEffect(() => {
+    setRegionList(getRegions);
+    setIsLoadingRegion(false);
+  }, []);
+
+  useEffect(() => {
     if (region) {
-      setAddressList(
-        addressesData.filter((address) => address.region === region)
-      );
+      setAddressList(getAddresses);
+      setIsLoadingAddress(false);
     } else {
       setAddressList([]);
+      setCustomersList([]);
     }
   }, [region]);
 
   useEffect(() => {
     if (address) {
-      setCustomersList(
-        customersData.filter((customer) => customer.addressId === address)
-      );
+      setCustomersList(getCustomers);
+      setIsLoadingCustomer(false);
     } else {
       setCustomersList([]);
     }
@@ -102,10 +151,15 @@ const salesorder = () => {
             selectedValue={region}
             onValueChange={(itemValue, itemIndex) => setRegion(itemValue)}
             style={styles.input}
+            enabled={!isLoadingRegion}
           >
-            {regionsData.map((region) => (
-              <Picker.Item label={region} value={region} key={region} />
-            ))}
+            {regionList ? (
+              regionList.map((region) => (
+                <Picker.Item label={region} value={region} key={region} />
+              ))
+            ) : (
+              <Picker.Item label={"Loading..."} value={0} key={0} />
+            )}
           </Picker>
         </View>
 
@@ -115,14 +169,19 @@ const salesorder = () => {
             selectedValue={address}
             onValueChange={(itemValue, itemIndex) => setAddress(itemValue)}
             style={styles.input}
+            enabled={!isLoadingAddress}
           >
-            {addressList.map((address) => (
-              <Picker.Item
-                key={address.id}
-                label={address.address}
-                value={address.id}
-              />
-            ))}
+            {addressList ? (
+              addressList.map((address) => (
+                <Picker.Item
+                  key={address.id}
+                  label={address.address}
+                  value={address.id}
+                />
+              ))
+            ) : (
+              <Picker.Item label={"Loading..."} value={0} key={0} />
+            )}
           </Picker>
         </View>
 
@@ -132,14 +191,19 @@ const salesorder = () => {
             selectedValue={customer}
             onValueChange={(itemValue, itemIndex) => setCustomer(itemValue)}
             style={styles.input}
+            enabled={!isLoadingCustomer}
           >
-            {customersList.map((customer, index) => (
-              <Picker.Item
-                label={customer.name}
-                value={customer.id}
-                key={index}
-              />
-            ))}
+            {customersList ? (
+              customersList.map((customer, index) => (
+                <Picker.Item
+                  label={customer.name}
+                  value={customer.id}
+                  key={index}
+                />
+              ))
+            ) : (
+              <Picker.Item label={"Loading..."} value={0} key={0} />
+            )}
           </Picker>
         </View>
 

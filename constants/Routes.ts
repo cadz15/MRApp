@@ -1,6 +1,7 @@
 export const routes = {
-  customers: `${process.env.EXPO_API_LINK}/customers`,
-  items: `${process.env.EXPO_API_LINK}/items`,
-  salesorder: `${process.env.EXPO_API_LINK}/sales-orders`,
-  salescreate: `${process.env.EXPO_API_LINK}/sales-order`,
+  customers: `${process.env.EXPO_PUBLIC_API_LINK}/customers`,
+  customersCreate: `${process.env.EXPO_PUBLIC_API_LINK}/customers`,
+  items: `${process.env.EXPO_PUBLIC_API_LINK}/items`,
+  salesorder: `${process.env.EXPO_PUBLIC_API_LINK}/sales-orders`,
+  salesCreate: `${process.env.EXPO_PUBLIC_API_LINK}/sales-order`,
 };

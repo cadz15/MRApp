@@ -1,5 +1,17 @@
 import { integer, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
+//medical representative
+export const medrep = sqliteTable("medrep", {
+  id: integer("id").primaryKey(),
+  name: text("name"),
+  apiKey: text("api_key"),
+  productAppId: text("product_app_id"),
+  salesOrderAppId: text("sales_order_app_id"),
+  createdAt: text("created_at").default("CURRENT_TIMESTAMP"),
+  updatedAt: text("updated_at").default("CURRENT_TIMESTAMP"),
+  deletedAt: text("deleted_at"),
+});
+
 // Customers
 export const customers = sqliteTable("customers", {
   id: integer("id").primaryKey(),
@@ -48,7 +60,7 @@ export const itemImages = sqliteTable("item_images", {
 // Sales Orders
 export const salesOrders = sqliteTable("sales_orders", {
   id: integer("id").primaryKey(),
-  customerId: integer("customer_id").notNull(),
+  customerId: integer("customer_id").references(() => customers.id),
   medicalRepresentativeId: integer("medical_representative_id").notNull(),
   salesOrderNumber: text("sales_order_number").notNull(),
   dateSold: text("date_sold").notNull(),

@@ -1,4 +1,6 @@
 import { getDB } from "@/OfflineDB/db";
+import { syncDownData } from "@/OfflineDB/sync";
+import { isOnline } from "@/utils/checkInternet";
 import React, { createContext, useContext, useEffect, useState } from "react";
 
 type DBContextType = Awaited<ReturnType<typeof getDB>> | null;
@@ -18,6 +20,12 @@ export const DBProvider = ({ children }: { children: React.ReactNode }) => {
     (async () => {
       const d = await getDB();
       setDb(d);
+
+      const online = await isOnline();
+
+      if (online) {
+        await syncDownData();
+      }
     })();
   }, []);
 
