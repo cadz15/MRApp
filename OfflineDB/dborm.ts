@@ -20,26 +20,32 @@ export async function setMedrep(apiKey: string) {
       return null;
     }
 
-    await res.json();
+    const medrepData = await res.json();
 
-    await db
-      .insert(medrep)
-      .values({
-        id: medrep.id,
-        name: medrep.name,
-        apiKey: medrep.apiKey,
-        productAppId: medrep.productAppId,
-        salesOrderAppId: medrep.salesOrderAppId,
-      })
-      .onConflictDoUpdate({
-        target: medrep.id,
-        set: {
-          name: medrep.name,
-          apiKey: medrep.apiKey,
-          productAppId: medrep.productAppId,
-          salesOrderAppId: medrep.salesOrderAppId,
-        },
-      });
+    if (medrepData.length > 0) {
+      await db
+        .insert(medrep)
+        .values({
+          id: medrepData.id,
+          name: medrepData.name,
+          apiKey: medrepData.apiKey,
+          productAppId: medrepData.productAppId,
+          salesOrderAppId: medrepData.salesOrderAppId,
+        })
+        .onConflictDoUpdate({
+          target: medrepData.id,
+          set: {
+            name: medrepData.name,
+            apiKey: medrepData.apiKey,
+            productAppId: medrepData.productAppId,
+            salesOrderAppId: medrepData.salesOrderAppId,
+          },
+        });
+
+      return true;
+    }
+
+    return null;
   } catch (err) {
     console.error(`❌ Failed to fetch :`, err);
     return null;
