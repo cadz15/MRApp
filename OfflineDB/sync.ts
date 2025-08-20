@@ -327,12 +327,9 @@ export async function syncLocalCustomers() {
 export async function getMedRepData() {
   const db = await getDB();
 
-  const result = await db
-    .select({
-      apiKey: medrep.apiKey,
-      salesOrderAppId: medrep.salesOrderAppId,
-    })
-    .from(medrep);
+  const result = await db.select().from(medrep);
+
+  console.log(result);
 
   return result;
 }

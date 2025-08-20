@@ -1,4 +1,9 @@
+import { useDB } from "@/context/DBProvider";
+import migrations from "@/drizzle/migrations";
+import { getSqliteInstance } from "@/OfflineDB/db";
 import { getMedRepData } from "@/OfflineDB/sync";
+import { useMigrations } from "drizzle-orm/expo-sqlite/migrator";
+import { useDrizzleStudio } from "expo-drizzle-studio-plugin";
 import { Stack } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { StatusBar, StyleSheet } from "react-native";
@@ -7,13 +12,30 @@ import FirstLoading from "./firstloading";
 
 const CheckAPI = () => {
   const [hasAPI, setHasAPI] = useState(false);
+  const [medRepData, setMedRepData] = useState(null);
+
+  useDrizzleStudio(getSqliteInstance());
+
+  const db = useDB();
+
+  try {
+    const { success, error } = useMigrations(db, migrations);
+  } catch (error) {
+    console.log(error);
+  }
+
+  const checkMedrep = () => {
+    const medrep = getMedRepData();
+
+    return medrep;
+  };
 
   useEffect(() => {
-    async () => {
-      if ((await getMedRepData()).length > 0) {
+    checkMedrep().then((item) => {
+      if (item.length > 0) {
         setHasAPI(true);
       }
-    };
+    });
   }, []);
 
   return (

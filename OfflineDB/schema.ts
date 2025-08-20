@@ -36,10 +36,10 @@ export const customers = sqliteTable("customers", {
 // Items
 export const items = sqliteTable("items", {
   id: integer("id").primaryKey(),
-  brandName: text("brand_name").notNull(),
-  genericName: text("generic_name").notNull(),
-  milligrams: text("milligrams").notNull(),
-  supply: text("supply").notNull(),
+  brandName: text("brand_name"),
+  genericName: text("generic_name"),
+  milligrams: text("milligrams"),
+  supply: text("supply"),
   catalogPrice: text("catalog_price").notNull(),
   productType: text("product_type").notNull(),
   inventory: integer("inventory").notNull(),

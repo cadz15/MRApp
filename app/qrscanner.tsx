@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { Button, StyleSheet, Text, View } from "react-native";
 
+import { setMedrep } from "@/OfflineDB/dborm";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { useNavigation } from "expo-router";
 
 const QrScanner = () => {
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
-  const [data, setData] = useState(null);
+  const [data, setData] = useState("");
   const navigation = useNavigation();
 
   useEffect(() => {
@@ -15,9 +16,14 @@ const QrScanner = () => {
     if (!permission) requestPermission();
   }, [permission]);
 
-  const handleBarCodeScanned = ({ data }: any) => {
+  const handleBarCodeScanned = async ({ data }: any) => {
     setScanned(true);
-    setData(data);
+    setData("Please restart the app to continue!");
+    try {
+      await setMedrep(data);
+    } catch (error) {
+      console.log("error qr: ", error);
+    }
   };
 
   if (!permission) return <View />;
@@ -42,7 +48,7 @@ const QrScanner = () => {
       {scanned && (
         <Button title="Scan again" onPress={() => setScanned(false)} />
       )}
-      {data && <Text style={styles.dataText}>Scanned Data: {data}</Text>}
+      {data && <Text style={styles.dataText}>{data}</Text>}
     </View>
   );
 };

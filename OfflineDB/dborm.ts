@@ -2,17 +2,30 @@ import { routes } from "@/constants/Routes";
 import { getDB } from "./db";
 import { medrep } from "./schema";
 
+const generateRandomString = () => {
+  const characters =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  let result = "";
+  const charactersLength = characters.length;
+  for (let i = 0; i < 6; i++) {
+    result += characters.charAt(Math.floor(Math.random() * charactersLength));
+  }
+  return result;
+};
+
 export async function setMedrep(apiKey: string) {
   const db = await getDB();
+  const appId = generateRandomString();
 
   try {
     const res = await fetch(routes.medRep, {
-      method: "get",
+      method: "post",
       headers: {
         Accept: "application/json",
         "Content-Type": "application/json",
         "X-API-KEY": `${apiKey}`,
       },
+      body: JSON.stringify({ app_key: appId }),
     });
 
     if (!res.ok) {
@@ -22,23 +35,23 @@ export async function setMedrep(apiKey: string) {
 
     const medrepData = await res.json();
 
-    if (medrepData.length > 0) {
+    if (medrepData?.data) {
       await db
         .insert(medrep)
         .values({
-          id: medrepData.id,
-          name: medrepData.name,
-          apiKey: medrepData.apiKey,
-          productAppId: medrepData.productAppId,
-          salesOrderAppId: medrepData.salesOrderAppId,
+          id: medrepData?.data.id,
+          name: medrepData?.data.name,
+          apiKey: medrepData?.data.api_key,
+          productAppId: medrepData?.data.product_app_id,
+          salesOrderAppId: medrepData?.data.sales_order_app_id,
         })
         .onConflictDoUpdate({
-          target: medrepData.id,
+          target: medrep.id,
           set: {
-            name: medrepData.name,
-            apiKey: medrepData.apiKey,
-            productAppId: medrepData.productAppId,
-            salesOrderAppId: medrepData.salesOrderAppId,
+            name: medrepData?.data.name,
+            apiKey: medrepData?.data.api_key,
+            productAppId: medrepData?.data.product_app_id,
+            salesOrderAppId: medrepData?.data.sales_order_app_id,
           },
         });
 
