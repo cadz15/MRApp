@@ -50,7 +50,7 @@ export async function syncCustomers() {
     return;
   }
 
-  for (const cust of remoteCustomers) {
+  for (const cust of remoteCustomers?.data) {
     await db
       .insert(customers)
       .values({
@@ -89,7 +89,7 @@ export async function syncCustomers() {
       });
   }
 
-  console.log(`✅ Synced ${remoteCustomers.length} customers`);
+  console.log(`✅ Synced ${remoteCustomers?.data.length} customers`);
 }
 
 export async function syncItems() {
@@ -101,7 +101,7 @@ export async function syncItems() {
     return;
   }
 
-  for (const item of remoteItems) {
+  for (const item of remoteItems?.data) {
     await db
       .insert(items)
       .values({
@@ -128,7 +128,7 @@ export async function syncItems() {
       });
   }
 
-  console.log(`✅ Synced ${remoteItems.length} items`);
+  console.log(`✅ Synced ${remoteItems?.data.length} items`);
 }
 
 export async function syncSalesOrder() {
@@ -140,7 +140,7 @@ export async function syncSalesOrder() {
     return;
   }
 
-  for (const salesOrder of remoteSalesOrders) {
+  for (const salesOrder of remoteSalesOrders?.data) {
     await db
       .insert(salesOrders)
       .values({
@@ -200,7 +200,7 @@ export async function syncSalesOrder() {
     }
   }
 
-  console.log(`✅ Synced ${remoteSalesOrders.length} items`);
+  console.log(`✅ Synced ${remoteSalesOrders?.data.length} sales orders`);
 }
 
 export async function syncLocalSalesOrders() {
@@ -329,8 +329,6 @@ export async function getMedRepData() {
 
   const result = await db.select().from(medrep);
 
-  console.log(result);
-
   return result;
 }
 
@@ -339,7 +337,9 @@ export async function syncDownData() {
     syncCustomers();
     syncItems();
     syncSalesOrder();
-  } catch (error) {}
+  } catch (error) {
+    console.error(`❌ Sync error`, error);
+  }
 }
 
 export async function syncUpData() {

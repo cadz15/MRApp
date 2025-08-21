@@ -1,6 +1,8 @@
 import SalesListModal from "@/components/Modal/SalesListModal";
 import SideModal, { ProductItemType } from "@/components/Modal/SideModal";
 import { formattedCurrency } from "@/constants/Currency";
+import { getCustomerFromDB, setSalesOrder } from "@/OfflineDB/dborm";
+import { CustomersTableType } from "@/OfflineDB/tableTypes";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import Feather from "@expo/vector-icons/Feather";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
@@ -15,29 +17,23 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import NotFoundScreen from "../+not-found";
 
 type RenderItemType = {
   item: ProductItemType;
 };
 
-const customerData = [
-  {
-    id: 1,
-    name: "Customer #1",
-  },
-  {
-    id: 2,
-    name: "Customer #2",
-  },
-  {
-    id: 3,
-    name: "Customer #3",
-  },
-  {
-    id: 4,
-    name: "Customer #4",
-  },
-];
+export type CreateSalesOrderType = {
+  customerId: number;
+  medicalRepresentativeId?: number;
+  salesOrderNumber: string;
+  dateSold: string;
+  total: string;
+  remarks?: string;
+  syncDate?: string;
+  status: string;
+  items: ProductItemType[];
+};
 
 const CreateSalesOrder = () => {
   const [modalVisible, setModalVisible] = useState(false);
@@ -47,11 +43,13 @@ const CreateSalesOrder = () => {
     []
   );
   const [reSort, setReSort] = useState(false);
-  const [customer, setCustomer] = useState({});
+  const [customer, setCustomer] = useState<CustomersTableType | null>(null);
   const [total, setTotal] = useState(0);
   const [salesId, setSalesId] = useState(
     Math.random().toString(36).substr(2, 7)
   );
+  const [withS3, setWithS3] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { id } = useLocalSearchParams<{ id: string }>();
 
@@ -90,7 +88,7 @@ const CreateSalesOrder = () => {
 
     if (!item) return null;
 
-    const price = item.product ? item.product.catalog_price : 0;
+    const price = item.product ? item.product.catalogPrice : 0;
 
     item.quantity += 1;
 
@@ -112,7 +110,7 @@ const CreateSalesOrder = () => {
 
     if (!item) return null;
 
-    const price = item.product ? item.product.catalog_price : 0;
+    const price = item.product ? item.product.catalogPrice : 0;
 
     if (item.quantity > 1) {
       item.quantity -= 1;
@@ -131,10 +129,34 @@ const CreateSalesOrder = () => {
     ]);
   };
 
+  const handleDeleteItem = (id: number) => {
+    const item = selectedItems?.filter((item) => item.product_id === id)[0];
+
+    setReSort(true);
+    setSelectedItems((prevState) => [
+      ...prevState?.filter((item) => item.product_id !== id),
+    ]);
+  };
+
+  const handleCreateSales = async () => {
+    setIsSubmitting(true);
+    await setSalesOrder({
+      customerId: customer?.id,
+      salesOrderNumber: salesId,
+      remarks: "",
+      total: total?.toString(),
+      dateSold: new Date().toLocaleDateString(),
+      status: "pending",
+      items: selectedItems,
+    });
+
+    setIsSubmitting(false);
+  };
+
   const handleSortSelectedItems = (arr: ProductItemType[]) => {
     return arr.sort((a: ProductItemType, b: ProductItemType) => {
-      if (a.product.brand_name < b.product.brand_name) return -1;
-      if (a.product.brand_name > b.product.brand_name) return 1;
+      if (a.product?.brandName < b.product?.brandName) return -1;
+      if (a.product?.brandName > b.product?.brandName) return 1;
       return 0;
     });
   };
@@ -143,9 +165,9 @@ const CreateSalesOrder = () => {
     <View style={styles.itemContainer}>
       <View style={styles.itemLeftContainer}>
         <View>
-          <Text style={styles.itemTextHeader}>{item.product?.brand_name}</Text>
+          <Text style={styles.itemTextHeader}>{item.product?.brandName}</Text>
           <Text style={styles.itemTextDescription}>
-            {item.product?.generic_name}
+            {item.product?.genericName}
           </Text>
         </View>
         {item.remarks && (
@@ -173,6 +195,14 @@ const CreateSalesOrder = () => {
               </Text>
             )
           ) : null}
+
+          <TouchableOpacity
+            onPress={() => {
+              handleDeleteItem(item.product_id);
+            }}
+          >
+            <Feather name="trash-2" size={24} color="#ff3232ff" />
+          </TouchableOpacity>
         </View>
       </View>
       <View style={[styles.itemRightContainer]}>
@@ -197,9 +227,23 @@ const CreateSalesOrder = () => {
   }, [selectedItems]);
 
   useEffect(() => {
-    setCustomer(
-      customerData.filter((customerInfo) => customerInfo.id === parseInt(id))[0]
-    );
+    getCustomerFromDB(parseInt(id)).then((customer) => {
+      if (customer) {
+        setCustomer(customer[0]);
+        if (customer[0]?.s3License) {
+          const validatityDate = new Date(customer[0].s3Validity);
+          const nowDate = new Date();
+
+          if (validatityDate >= nowDate) {
+            setWithS3(true);
+          } else {
+            setWithS3(false);
+          }
+        }
+      } else {
+        <NotFoundScreen />;
+      }
+    });
   }, [id]);
 
   useEffect(() => {
@@ -214,6 +258,7 @@ const CreateSalesOrder = () => {
         visible={modalVisible}
         onClose={handleToggleModal}
         onAddItem={handleOnAddItem}
+        withS3={withS3}
       />
 
       <SalesListModal
@@ -300,8 +345,16 @@ const CreateSalesOrder = () => {
             >
               <MaterialIcons name="preview" size={24} color="#fff" />
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.button, { flex: 1 }]}>
-              <Text style={styles.buttonText}>Create Sales Order</Text>
+            <TouchableOpacity
+              style={[styles.button, { flex: 1 }]}
+              disabled={isSubmitting}
+              onPress={handleCreateSales}
+            >
+              {isSubmitting ? (
+                <Text style={styles.buttonText}>Creating....</Text>
+              ) : (
+                <Text style={styles.buttonText}>Create Sales Order</Text>
+              )}
             </TouchableOpacity>
           </View>
         </View>

@@ -1,6 +1,15 @@
+import { CreateSalesOrderType } from "@/app/salesorder/[id]";
 import { routes } from "@/constants/Routes";
+import { eq, notLike } from "drizzle-orm";
 import { getDB } from "./db";
-import { medrep } from "./schema";
+import {
+  customers,
+  items,
+  medrep,
+  salesOrderItems,
+  salesOrders as salesOrdersSchema,
+} from "./schema";
+import { getMedRepData } from "./sync";
 
 const generateRandomString = () => {
   const characters =
@@ -62,5 +71,103 @@ export async function setMedrep(apiKey: string) {
   } catch (err) {
     console.error(`❌ Failed to fetch :`, err);
     return null;
+  }
+}
+
+export async function getCustomerFromDB(id: number) {
+  const db = await getDB();
+
+  try {
+    const result = await db
+      .select()
+      .from(customers)
+      .where(eq(customers.id, id));
+
+    return result;
+  } catch (err) {
+    console.error(`❌ Failed to fetch :`, err);
+    return null;
+  }
+}
+
+export async function getItemsFromDB(withS3: boolean) {
+  const db = await getDB();
+
+  try {
+    if (withS3) {
+      const result = await db.select().from(items);
+
+      return result;
+    } else {
+      const result = await db
+        .select()
+        .from(items)
+        .where(notLike(items.productType, "regulated"));
+      return result;
+    }
+  } catch (err) {
+    console.error(`❌ Failed to fetch :`, err);
+    return null;
+  }
+}
+
+export async function setSalesOrder(salesOrder: CreateSalesOrderType) {
+  const db = await getDB();
+  const medrep = await getMedRepData();
+
+  await db
+    .insert(salesOrdersSchema)
+    .values({
+      customerId: salesOrder.customerId,
+      medicalRepresentativeId: medrep[0]?.id,
+      salesOrderNumber: salesOrder.salesOrderNumber,
+      dateSold: salesOrder.dateSold,
+      total: salesOrder.total,
+      remarks: salesOrder.remarks,
+      syncDate: "",
+      status: "pending",
+    })
+    .onConflictDoUpdate({
+      target: salesOrdersSchema.id,
+      set: {
+        customerId: salesOrder.customerId,
+        medicalRepresentativeId: medrep[0]?.id,
+        salesOrderNumber: salesOrder.salesOrderNumber,
+        dateSold: salesOrder.dateSold,
+        total: salesOrder.total,
+        remarks: salesOrder.remarks,
+        syncDate: "",
+        status: "pending",
+      },
+    });
+
+  for (const salesOrderItem of salesOrder?.items) {
+    await db
+      .insert(salesOrderItems)
+      .values({
+        salesOrderId: 1,
+        itemId: salesOrderItem.product_id,
+        quantity: salesOrderItem.quantity,
+        promo: salesOrderItem.promo,
+        discount: salesOrderItem.discount,
+        freeItemQuantity: salesOrderItem.freeItemQuantity,
+        freeItemRemarks: salesOrderItem.freeItemRemarks,
+        remarks: salesOrderItem.remarks,
+        total: salesOrderItem.total,
+      })
+      .onConflictDoUpdate({
+        target: salesOrderItems.id,
+        set: {
+          salesOrderId: 1,
+          itemId: salesOrderItem.product_id,
+          quantity: salesOrderItem.quantity.toString(),
+          promo: salesOrderItem.promo,
+          discount: salesOrderItem.discount.toString() ?? "",
+          freeItemQuantity: salesOrderItem.freeItemQuantity.toString() ?? "",
+          freeItemRemarks: salesOrderItem.freeItemRemarks,
+          remarks: salesOrderItem.remarks,
+          total: salesOrderItem.total,
+        },
+      });
   }
 }

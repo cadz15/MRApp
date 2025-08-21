@@ -30,9 +30,9 @@ const SalesListModal = ({
     <View style={styles.itemContainer}>
       <View style={styles.itemLeftContainer}>
         <View>
-          <Text style={styles.itemTextHeader}>{item.product?.brand_name}</Text>
+          <Text style={styles.itemTextHeader}>{item.product?.brandName}</Text>
           <Text style={styles.itemTextDescription}>
-            {item.product?.generic_name}
+            {item.product?.genericName}
           </Text>
         </View>
         {item.remarks && (

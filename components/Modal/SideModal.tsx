@@ -1,4 +1,6 @@
 import { formattedCurrency } from "@/constants/Currency";
+import { getItemsFromDB } from "@/OfflineDB/dborm";
+import { ItemsTableType } from "@/OfflineDB/tableTypes";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import { Picker } from "@react-native-picker/picker";
 import React, { useEffect, useState } from "react";
@@ -17,6 +19,7 @@ type SideModalType = {
   visible: boolean;
   onClose: () => void;
   onAddItem: (product: ProductItemType) => void;
+  withS3: boolean;
 };
 
 export type ProductType = {
@@ -30,13 +33,13 @@ export type ProductType = {
 };
 
 type RenderItemType = {
-  item: ProductType;
+  item: ItemsTableType;
   index: number;
 };
 
 export type ProductItemType = {
   product_id: number;
-  product?: ProductType;
+  product?: ItemsTableType;
   quantity: number;
   promo: string;
   discount?: number;
@@ -46,122 +49,32 @@ export type ProductItemType = {
   total: number;
 };
 
-const productData = [
-  {
-    id: 1,
-    brand_name: "1Hesoyam/vaguvix",
-    generic_name: "sample",
-    milligrams: "1",
-    supply: "1",
-    catalog_price: 1000,
-    product_type: "exclusive",
-  },
-  {
-    id: 2,
-    brand_name: "2sadasd",
-    generic_name: "sample",
-    milligrams: "1",
-    supply: "1",
-    catalog_price: 1000,
-    product_type: "exclusive",
-  },
-  {
-    id: 3,
-    brand_name: "3itemthrid",
-    generic_name: "sample",
-    milligrams: "1",
-    supply: "1",
-    catalog_price: 1000,
-    product_type: "exclusive",
-  },
-  {
-    id: 4,
-    brand_name: "4123asd",
-    generic_name: "sample",
-    milligrams: "1",
-    supply: "1",
-    catalog_price: 1000,
-    product_type: "exclusive",
-  },
-  {
-    id: 5,
-    brand_name: "5th",
-    generic_name: "sample",
-    milligrams: "1",
-    supply: "1",
-    catalog_price: 1000,
-    product_type: "exclusive",
-  },
-  {
-    id: 6,
-    brand_name: "6item",
-    generic_name: "sample",
-    milligrams: "1",
-    supply: "1",
-    catalog_price: 1000,
-    product_type: "exclusive",
-  },
-  {
-    id: 7,
-    brand_name: "7asd",
-    generic_name: "sample",
-    milligrams: "1",
-    supply: "1",
-    catalog_price: 1000,
-    product_type: "exclusive",
-  },
-  {
-    id: 8,
-    brand_name: "8sdasdasd",
-    generic_name: "sample",
-    milligrams: "1",
-    supply: "1",
-    catalog_price: 1000,
-    product_type: "exclusive",
-  },
-  {
-    id: 9,
-    brand_name: "9asdasd",
-    generic_name: "sample",
-    milligrams: "1",
-    supply: "1",
-    catalog_price: 1000,
-    product_type: "exclusive",
-  },
-  {
-    id: 10,
-    brand_name: "10item",
-    generic_name: "sample",
-    milligrams: "1",
-    supply: "1",
-    catalog_price: 1000,
-    product_type: "exclusive",
-  },
-];
-
-const SideModal = ({ visible, onClose, onAddItem }: SideModalType) => {
+const SideModal = ({ visible, onClose, onAddItem, withS3 }: SideModalType) => {
   const [showModal, setShowModal] = useState(visible);
-  const [filteredProductData, setFilteredProductData] = useState(productData);
+  const [filteredProductData, setFilteredProductData] = useState<
+    ItemsTableType[] | null
+  >(null);
   const [total, setTotal] = useState(0);
-  const [selectedProduct, setSelectedProduct] = useState<ProductType | null>(
-    null
-  );
+  const [selectedProduct, setSelectedProduct] = useState<
+    ItemsTableType | undefined
+  >(undefined);
   const [productItem, setProductItem] = useState<ProductItemType>({
     product_id: 0,
     promo: "regular",
     quantity: 1,
     total: 0,
   });
+  const [items, setItems] = useState<ItemsTableType[] | null>(null);
 
   const handleClickItem = (id: number) => {
-    setSelectedProduct(productData.filter((product) => product.id === id)[0]);
+    setSelectedProduct(items?.filter((item) => item.id === id)[0]);
   };
 
   const handleCalculateTotal = (quantity: number, discount?: number) => {
     const total =
       quantity *
       parseFloat(
-        selectedProduct ? selectedProduct.catalog_price.toString() : "0"
+        selectedProduct ? selectedProduct?.catalogPrice?.toString() : "0"
       );
 
     setProductItem((prevState) => ({
@@ -183,13 +96,15 @@ const SideModal = ({ visible, onClose, onAddItem }: SideModalType) => {
 
   const handleSearch = (text: string) => {
     if (text) {
-      setFilteredProductData(
-        productData.filter((product) =>
-          product.brand_name.toLowerCase().includes(text.toLowerCase())
-        )
-      );
+      if (items) {
+        setFilteredProductData(
+          items.filter((item) =>
+            item.brandName?.toLowerCase().includes(text.toLowerCase())
+          )
+        );
+      }
     } else {
-      setFilteredProductData(productData);
+      setFilteredProductData(items);
     }
   };
 
@@ -199,7 +114,7 @@ const SideModal = ({ visible, onClose, onAddItem }: SideModalType) => {
     } else if (productItem.promo === "discount" && !productItem?.discount) {
       alert("Please Add Discount");
     } else {
-      setSelectedProduct(null);
+      setSelectedProduct(undefined);
       onAddItem(productItem);
     }
   };
@@ -210,21 +125,28 @@ const SideModal = ({ visible, onClose, onAddItem }: SideModalType) => {
       onPress={() => handleClickItem(item.id)}
     >
       <View style={styles.itemLeftSide}>
-        <Text style={styles.itemTextHeader}>{item.brand_name}</Text>
-        <Text style={styles.itemTextDescription}>{item.generic_name}</Text>
+        <Text style={styles.itemTextHeader}>{item.brandName}</Text>
+        <Text style={styles.itemTextDescription}>{item.genericName}</Text>
         <View style={styles.itemLeftBottomSide}>
           <Text style={styles.itemSubText}>{item.milligrams}</Text>
           <Text style={styles.itemSubText}>{item.supply}</Text>
-          <Text style={styles.productExclusive}>{item.product_type}</Text>
+          <Text style={styles.productExclusive}>{item.productType}</Text>
         </View>
       </View>
       <View style={styles.itemRighSide}>
         <Text style={styles.itemTextHeader}>
-          {formattedCurrency(item.catalog_price)}
+          {formattedCurrency(item.catalogPrice)}
         </Text>
       </View>
     </TouchableOpacity>
   );
+
+  useEffect(() => {
+    getItemsFromDB(withS3).then((items) => {
+      setItems(items);
+      setFilteredProductData(items);
+    });
+  }, [withS3]);
 
   useEffect(() => {
     if (selectedProduct) {
@@ -235,12 +157,16 @@ const SideModal = ({ visible, onClose, onAddItem }: SideModalType) => {
         product: selectedProduct,
         total: 0,
       });
-      handleCalculateTotal(1);
+      try {
+        handleCalculateTotal(1);
+      } catch (error) {
+        console.log("error on handleCalculate(): ", error);
+      }
     }
   }, [selectedProduct]);
 
   useEffect(() => {
-    setSelectedProduct(null);
+    setSelectedProduct(undefined);
   }, [visible]);
 
   return (
@@ -265,7 +191,7 @@ const SideModal = ({ visible, onClose, onAddItem }: SideModalType) => {
           />
         </View>
         <View style={styles.rightContainer}>
-          {selectedProduct === null ? (
+          {selectedProduct === undefined ? (
             <View style={styles.productInformationContainer}>
               <View
                 style={[
@@ -298,7 +224,7 @@ const SideModal = ({ visible, onClose, onAddItem }: SideModalType) => {
                     placeholder="Brand Name"
                     readOnly
                     style={styles.input}
-                    value={selectedProduct?.brand_name}
+                    value={selectedProduct?.brandName ?? ""}
                   />
                 </View>
                 <View style={styles.inputContainer}>
@@ -307,7 +233,7 @@ const SideModal = ({ visible, onClose, onAddItem }: SideModalType) => {
                     placeholder="Generic Name"
                     readOnly
                     style={styles.input}
-                    value={selectedProduct?.generic_name}
+                    value={selectedProduct?.genericName ?? ""}
                   />
                 </View>
                 <View style={styles.inputGroup}>
@@ -317,7 +243,7 @@ const SideModal = ({ visible, onClose, onAddItem }: SideModalType) => {
                       placeholder="Supply"
                       readOnly
                       style={styles.input}
-                      value={selectedProduct?.supply}
+                      value={selectedProduct?.supply ?? ""}
                     />
                   </View>
                   <View style={styles.inputContainer}>
@@ -326,7 +252,7 @@ const SideModal = ({ visible, onClose, onAddItem }: SideModalType) => {
                       placeholder="Price"
                       readOnly
                       style={styles.input}
-                      value={selectedProduct?.catalog_price.toString()}
+                      value={selectedProduct?.catalogPrice.toString()}
                     />
                   </View>
                 </View>

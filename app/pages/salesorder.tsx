@@ -65,9 +65,14 @@ const salesorder = () => {
   const [address, setAddress] = useState("");
   const [customer, setCustomer] = useState("");
 
-  const [addressList, setAddressList] = useState<any>([]);
-  const [customersList, setCustomersList] = useState<any>([]);
-  const [regionList, setRegionList] = useState<any>([]);
+  const [addressList, setAddressList] = useState<string[]>([]);
+  const [customersList, setCustomersList] = useState<
+    {
+      id: number;
+      name: string;
+    }[]
+  >([]);
+  const [regionList, setRegionList] = useState<string[]>([]);
 
   const [isLoadingRegion, setIsLoadingRegion] = useState(false);
   const [isLoadingAddress, setIsLoadingAddress] = useState(false);
@@ -90,6 +95,7 @@ const salesorder = () => {
     const result = await db
       .select({ shortAddress: customers.shortAddress })
       .from(customers)
+      .where(eq(customers.region, region))
       .groupBy(customers.shortAddress); // ensures unique shortAddress
 
     return result.map((r) => r.shortAddress);
@@ -107,7 +113,7 @@ const salesorder = () => {
         and(eq(customers.region, region), eq(customers.shortAddress, address))
       );
 
-    return result.map((r) => r.name);
+    return result;
   };
 
   const handleCreate = () => {
@@ -117,23 +123,33 @@ const salesorder = () => {
   };
 
   useEffect(() => {
-    setRegionList(getRegions);
+    getRegions().then((regions) => {
+      setRegionList(regions);
+    });
+
     setIsLoadingRegion(false);
   }, []);
 
   useEffect(() => {
     if (region) {
-      setAddressList(getAddresses);
+      getAddresses().then((addresses) => {
+        setAddressList(addresses);
+      });
       setIsLoadingAddress(false);
     } else {
       setAddressList([]);
-      setCustomersList([]);
     }
+
+    setCustomersList([]);
   }, [region]);
 
   useEffect(() => {
     if (address) {
-      setCustomersList(getCustomers);
+      getCustomers().then((customers) => {
+        console.log(customers);
+
+        setCustomersList(customers);
+      });
       setIsLoadingCustomer(false);
     } else {
       setCustomersList([]);
@@ -154,7 +170,7 @@ const salesorder = () => {
             enabled={!isLoadingRegion}
           >
             {regionList ? (
-              regionList.map((region: typeof regionList) => (
+              regionList?.map((region: string) => (
                 <Picker.Item label={region} value={region} key={region} />
               ))
             ) : (
@@ -172,12 +188,8 @@ const salesorder = () => {
             enabled={!isLoadingAddress}
           >
             {addressList ? (
-              addressList.map((address: typeof addressList) => (
-                <Picker.Item
-                  key={address.id}
-                  label={address.address}
-                  value={address.id}
-                />
+              addressList?.map((address: string) => (
+                <Picker.Item key={address} label={address} value={address} />
               ))
             ) : (
               <Picker.Item label={"Loading..."} value={0} key={0} />
@@ -194,8 +206,14 @@ const salesorder = () => {
             enabled={!isLoadingCustomer}
           >
             {customersList ? (
-              customersList.map(
-                (customer: typeof customersList, index: number) => (
+              customersList?.map(
+                (
+                  customer: {
+                    id: number;
+                    name: string;
+                  },
+                  index: number
+                ) => (
                   <Picker.Item
                     label={customer.name}
                     value={customer.id}
