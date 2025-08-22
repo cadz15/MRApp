@@ -18,9 +18,9 @@ const QrScanner = () => {
 
   const handleBarCodeScanned = async ({ data }: any) => {
     setScanned(true);
-    setData("Please restart the app to continue!");
     try {
       await setMedrep(data);
+      setData("Please restart the app to continue!");
     } catch (error) {
       console.log("error qr: ", error);
     }

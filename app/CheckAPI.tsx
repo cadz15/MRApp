@@ -3,6 +3,7 @@ import migrations from "@/drizzle/migrations";
 import { getSqliteInstance } from "@/OfflineDB/db";
 import { getMedRepData } from "@/OfflineDB/sync";
 import { MedicalRepresentativeTableType } from "@/OfflineDB/tableTypes";
+import axios from "axios";
 import { useMigrations } from "drizzle-orm/expo-sqlite/migrator";
 import { useDrizzleStudio } from "expo-drizzle-studio-plugin";
 import { Stack } from "expo-router";
@@ -42,20 +43,19 @@ const CheckAPI = () => {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
 
-      const response = await fetch(API_URL, {
-        method: "HEAD",
-        signal: controller.signal,
+      const response = await axios.head(API_URL, {
         headers: {
           Accept: "application/json",
           "Content-Type": "application/json",
           "X-API-KEY": `${medrepDataHere[0]?.apiKey}`,
           "X-API-APP-KEY": `${medrepDataHere[0]?.salesOrderAppId}`,
         },
+        signal: controller.signal,
       });
 
       clearTimeout(timeoutId);
 
-      if (response.ok) {
+      if (response.status === 200) {
         setApiAccessible("green");
       } else {
         setApiAccessible("black");
@@ -69,6 +69,7 @@ const CheckAPI = () => {
     checkMedrep().then((item) => {
       if (item.length > 0) {
         setHasAPI(true);
+
         setMedRepData(item[0]);
       }
     });

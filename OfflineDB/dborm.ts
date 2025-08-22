@@ -1,5 +1,6 @@
 import { CreateSalesOrderType } from "@/app/salesorder/[id]";
 import { routes } from "@/constants/Routes";
+import axios from "axios";
 import { eq, notLike } from "drizzle-orm";
 import { getDB } from "./db";
 import {
@@ -27,28 +28,29 @@ export async function setMedrep(apiKey: string) {
   const appId = generateRandomString();
 
   try {
-    const res = await fetch(routes.medRep, {
+    const res = await axios(routes.medRep, {
       method: "post",
       headers: {
         Accept: "application/json",
         "Content-Type": "application/json",
         "X-API-KEY": `${apiKey}`,
       },
-      body: JSON.stringify({ app_key: appId }),
+      data: JSON.stringify({ app_key: appId }),
     });
 
-    if (!res.ok) {
+    if (res.status !== 200) {
       console.warn(`⚠️ API responded with ${res.status} at `);
       return null;
     }
 
-    const medrepData = await res.json();
+    const medrepData = await res.data;
 
     if (medrepData?.data) {
       await db
         .insert(medrep)
         .values({
-          id: medrepData?.data.id,
+          id: 1,
+          onlineId: medrepData?.data.id,
           name: medrepData?.data.name,
           apiKey: medrepData?.data.api_key,
           productAppId: medrepData?.data.product_app_id,
@@ -57,6 +59,7 @@ export async function setMedrep(apiKey: string) {
         .onConflictDoUpdate({
           target: medrep.id,
           set: {
+            onlineId: medrepData?.data.id,
             name: medrepData?.data.name,
             apiKey: medrepData?.data.api_key,
             productAppId: medrepData?.data.product_app_id,

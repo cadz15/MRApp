@@ -1,4 +1,5 @@
 import { routes } from "@/constants/Routes";
+import axios from "axios";
 import { eq, inArray } from "drizzle-orm";
 import { getDB } from "./db";
 import { getCustomerFromLocalDB } from "./dborm";
@@ -11,6 +12,28 @@ import {
 } from "./schema";
 
 const API_BASE = process.env.EXPO_PUBLIC_API_LINK;
+
+async function safeAxios(url: string, type = "get") {
+  const medRepData = await getMedRepData();
+
+  try {
+    const response = await axios({
+      method: type,
+      url: url,
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        "X-API-KEY": `${medRepData[0]?.apiKey}`,
+        "X-API-APP-KEY": `${medRepData[0]?.salesOrderAppId}`,
+      },
+    });
+
+    return response.data; // Axios automatically parses the response body as JSON
+  } catch (err) {
+    console.error(`❌ Failed to fetch ${url}:`, err);
+    return null;
+  }
+}
 
 /**
  * Safe fetch helper that catches API/network errors
@@ -44,7 +67,7 @@ async function safeFetch(url: string, type = "get") {
 export async function syncCustomers() {
   const db = await getDB();
 
-  const remoteCustomers = await safeFetch(`${routes.customers}`);
+  const remoteCustomers = await safeAxios(`${routes.customers}`);
   if (!remoteCustomers) {
     console.log("⚠️ Skipping customers sync (API unreachable)");
     return;
@@ -89,7 +112,7 @@ export async function syncCustomers() {
           },
         });
     } catch (error) {
-      console.error(`❌ Sync error for customers:`, error);
+      console.error(`❌ Sync error for customer ID ${cust.id}:`, error);
     }
   }
 
@@ -99,7 +122,7 @@ export async function syncCustomers() {
 export async function syncItems() {
   const db = await getDB();
 
-  const remoteItems = await safeFetch(`${routes.items}`);
+  const remoteItems = await safeAxios(`${routes.items}`);
   if (!remoteItems) {
     console.log("⚠️ Skipping items sync (API unreachable)");
     return;
@@ -142,7 +165,7 @@ export async function syncItems() {
 export async function syncSalesOrder() {
   const db = await getDB();
 
-  const remoteSalesOrders = await safeFetch(routes.salesorder);
+  const remoteSalesOrders = await safeAxios(routes.salesorder);
   if (!remoteSalesOrders) {
     console.log("⚠️ Skipping items sync (API unreachable)");
     return;
@@ -257,6 +280,10 @@ export async function syncLocalSalesOrders() {
     itemsByOrder[item.salesOrderId].push(item);
   }
 
+  console.log("Unsynced Orders: ", unsyncedOrders);
+  console.log("orders items: ", items);
+  console.log("Items by Orders: ", itemsByOrder);
+
   // Step 5: Sync each order with its items
   for (const order of unsyncedOrders) {
     const items = itemsByOrder[0];
@@ -265,47 +292,45 @@ export async function syncLocalSalesOrders() {
       items: items.filter((item) => item.salesOrderOfflineId === order.id),
     };
 
+    console.log(medRepData[0]?.apiKey, medRepData[0]?.salesOrderAppId);
+
     try {
-      const res = await fetch(routes.salesCreate, {
-        method: "POST",
+      const res = await axios(routes.salesCreate, {
+        method: "post",
         headers: {
           Accept: "application/json",
           "Content-Type": "application/json",
           "X-API-KEY": `${medRepData[0]?.apiKey}`,
           "X-API-APP-KEY": `${medRepData[0]?.salesOrderAppId}`,
         },
-        body: JSON.stringify(payload),
-      }).then((response) => {
-        console.log(response.json());
+        data: JSON.stringify(payload),
       });
 
-      // if (res.ok) {
-      //   const response = await res.json();
-      //   console.log(response.body);
+      if (res.status === 200) {
+        const data = res.data;
+        console.log(res.data);
 
-      //   await db
-      //     .update(salesOrders)
-      //     .set({
-      //       syncDate: `${nowDate}`,
-      //       onlineId: response?.body.salesOrderId,
-      //     })
-      //     .where(eq(salesOrders.id, order.id));
+        await db
+          .update(salesOrders)
+          .set({
+            syncDate: `${nowDate}`,
+            onlineId: data.salesOrderId,
+          })
+          .where(eq(salesOrders.id, order.id));
 
-      //   response?.body.salesItemIds.forEach(async (item: { key: number }) => {
-      //     const [key, value] = Object.entries(item)[0]; // Get the first key-value pair
-
-      //     if (value) {
-      //       await db
-      //         .update(salesOrderItems)
-      //         .set({ onlineId: value })
-      //         .where(eq(salesOrderItems.id, parseInt(key)));
-      //     }
-      //   });
-
-      //   console.log(`✅ Sales order ${order.id} synced with items`);
-      // } else {
-      //   console.warn(`⚠️ Failed to sync order ${order.id} (${res.status})`);
-      // }
+        data.salesItemIds.forEach(async (item: { key: number }) => {
+          const [key, value] = Object.entries(item)[0]; // Get the first key-value pair
+          if (value) {
+            await db
+              .update(salesOrderItems)
+              .set({ onlineId: value })
+              .where(eq(salesOrderItems.id, parseInt(key)));
+          }
+        });
+        console.log(`✅ Sales order ${order.id} synced with items`);
+      } else {
+        console.warn(`⚠️ Failed to sync order ${order.id} (${res.status})`);
+      }
     } catch (err) {
       console.error(`❌ Sync error for order ${order.id}:`, err);
     }
@@ -350,7 +375,7 @@ export async function syncLocalCustomers() {
     console.log("Sync Customer Payload: ", JSON.stringify(payload));
 
     try {
-      const res = await fetch(routes.customersCreate, {
+      const res = await axios(routes.customersCreate, {
         method: "POST", // or PUT if updating
         headers: {
           Accept: "application/json",
@@ -358,23 +383,23 @@ export async function syncLocalCustomers() {
           "X-API-KEY": `${medRepData[0]?.apiKey}`,
           "X-API-APP-KEY": `${medRepData[0]?.salesOrderAppId}`,
         },
-        body: JSON.stringify(payload),
+        data: JSON.stringify(payload),
       });
 
-      if (res.ok) {
+      if (res.status === 200) {
         // 3. Mark as synced
-        const data = await res.json();
+        const data = await res.data;
 
         // update customers table
         await db
           .update(customers)
-          .set({ syncDate: nowDate, onlineId: data.data?.customer_id })
+          .set({ syncDate: nowDate, onlineId: data.customer_id })
           .where(eq(customers.id, cust.id));
 
         // update all sales order with customer id
         await db
           .update(salesOrders)
-          .set({ customerOnlineId: data.data?.customer_id })
+          .set({ customerOnlineId: data.customer_id })
           .where(eq(salesOrders.customerId, cust.id));
 
         console.log(`✅ Customer ${cust.id} synced`);
