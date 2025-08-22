@@ -13,6 +13,9 @@ import FirstLoading from "./firstloading";
 const CheckAPI = () => {
   const [hasAPI, setHasAPI] = useState(false);
   const [medRepData, setMedRepData] = useState(null);
+  const [apiAccessible, setApiAccessible] = useState(true);
+
+  const API_URL = `${process.env.EXPO_PUBLIC_API_LINK}/ping`;
 
   useDrizzleStudio(getSqliteInstance());
 
@@ -30,17 +33,47 @@ const CheckAPI = () => {
     return medrep;
   };
 
+  const pingApi = async () => {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout
+
+      const response = await fetch(API_URL, {
+        method: "HEAD",
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (response.ok) {
+        setApiAccessible(true);
+      } else {
+        setApiAccessible(false);
+      }
+    } catch (error) {
+      setApiAccessible(false);
+    }
+  };
+
   useEffect(() => {
     checkMedrep().then((item) => {
       if (item.length > 0) {
         setHasAPI(true);
       }
     });
+
+    pingApi();
+
+    const interval = setInterval(pingApi, 5000); // repeat every 5s
+    return () => clearInterval(interval);
   }, []);
 
   return (
     <SafeAreaView
-      style={styles.safeArea}
+      style={[
+        styles.safeArea,
+        { backgroundColor: apiAccessible ? "green" : "black" },
+      ]}
       edges={["top", "bottom", "left", "right"]}
     >
       <StatusBar hidden />
@@ -85,7 +118,6 @@ const CheckAPI = () => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#000", // Match your app's theme
   },
 });
 

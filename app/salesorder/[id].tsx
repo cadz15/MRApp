@@ -6,7 +6,7 @@ import { CustomersTableType } from "@/OfflineDB/tableTypes";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import Feather from "@expo/vector-icons/Feather";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import { Link, useLocalSearchParams } from "expo-router";
+import { Link, router, useLocalSearchParams } from "expo-router";
 import * as ScreenOrientation from "expo-screen-orientation";
 import React, { useEffect, useState } from "react";
 import {
@@ -144,7 +144,7 @@ const CreateSalesOrder = () => {
     setIsSubmitting(true);
     try {
       if (customer && selectedItems.length >= 1) {
-        await setSalesOrder({
+        const success = await setSalesOrder({
           customerId: customer?.id,
           customerOnlineId: customer?.onlineId ?? undefined, // set undefined if unsynced
           salesOrderNumber: salesId,
@@ -154,11 +154,22 @@ const CreateSalesOrder = () => {
           status: "pending",
           items: selectedItems,
         });
+
+        if (success) {
+          router.push("/(tabs)/explore");
+        } else {
+          Alert.alert(
+            "Error! Unable to create sales order. Please contact developer."
+          );
+        }
       } else {
         Alert.alert("Error! No customer or item selected.");
       }
     } catch (error) {
       console.log(error);
+      Alert.alert(
+        "Error! Unable to create sales order. Please contact developer."
+      );
     }
 
     setIsSubmitting(false);
