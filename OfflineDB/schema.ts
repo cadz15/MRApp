@@ -2,7 +2,8 @@ import { integer, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 //medical representative
 export const medrep = sqliteTable("medrep", {
-  id: integer("id").primaryKey(),
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  onlineId: integer("online_id"),
   name: text("name"),
   apiKey: text("api_key"),
   productAppId: text("product_app_id"),
@@ -14,7 +15,8 @@ export const medrep = sqliteTable("medrep", {
 
 // Customers
 export const customers = sqliteTable("customers", {
-  id: integer("id").primaryKey(),
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  onlineId: integer("online_id"),
   name: text("name").notNull(),
   fullAddress: text("full_address").notNull(),
   shortAddress: text("short_address").notNull(),
@@ -35,7 +37,8 @@ export const customers = sqliteTable("customers", {
 
 // Items
 export const items = sqliteTable("items", {
-  id: integer("id").primaryKey(),
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  onlineId: integer("online_id"),
   brandName: text("brand_name"),
   genericName: text("generic_name"),
   milligrams: text("milligrams"),
@@ -50,7 +53,8 @@ export const items = sqliteTable("items", {
 
 // Item Images
 export const itemImages = sqliteTable("item_images", {
-  id: integer("id").primaryKey(),
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  onlineId: integer("online_id"),
   itemId: integer("item_id").notNull(),
   link: text("link").notNull(),
   createdAt: text("created_at").default("CURRENT_TIMESTAMP"),
@@ -59,8 +63,10 @@ export const itemImages = sqliteTable("item_images", {
 
 // Sales Orders
 export const salesOrders = sqliteTable("sales_orders", {
-  id: integer("id").primaryKey(),
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  onlineId: integer("online_id"),
   customerId: integer("customer_id").references(() => customers.id),
+  customerOnlineId: integer("customer_online_id"),
   medicalRepresentativeId: integer("medical_representative_id").notNull(),
   salesOrderNumber: text("sales_order_number").notNull(),
   dateSold: text("date_sold").notNull(),
@@ -75,8 +81,10 @@ export const salesOrders = sqliteTable("sales_orders", {
 
 // Sales Order Items
 export const salesOrderItems = sqliteTable("sales_order_items", {
-  id: integer("id").primaryKey(),
-  salesOrderId: integer("sales_order_id").notNull(),
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  onlineId: integer("online_id"),
+  salesOrderId: integer("sales_order_id"),
+  salesOrderOfflineId: integer("sales_order_offline_id"),
   itemId: integer("item_id").notNull(),
   quantity: text("quantity").notNull(),
   promo: text("promo").notNull(),

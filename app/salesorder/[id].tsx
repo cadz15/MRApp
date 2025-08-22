@@ -10,6 +10,7 @@ import { Link, useLocalSearchParams } from "expo-router";
 import * as ScreenOrientation from "expo-screen-orientation";
 import React, { useEffect, useState } from "react";
 import {
+  Alert,
   FlatList,
   StyleSheet,
   Text,
@@ -25,6 +26,7 @@ type RenderItemType = {
 
 export type CreateSalesOrderType = {
   customerId: number;
+  customerOnlineId?: number;
   medicalRepresentativeId?: number;
   salesOrderNumber: string;
   dateSold: string;
@@ -140,15 +142,24 @@ const CreateSalesOrder = () => {
 
   const handleCreateSales = async () => {
     setIsSubmitting(true);
-    await setSalesOrder({
-      customerId: customer?.id,
-      salesOrderNumber: salesId,
-      remarks: "",
-      total: total?.toString(),
-      dateSold: new Date().toLocaleDateString(),
-      status: "pending",
-      items: selectedItems,
-    });
+    try {
+      if (customer && selectedItems.length >= 1) {
+        await setSalesOrder({
+          customerId: customer?.id,
+          customerOnlineId: customer?.onlineId ?? undefined, // set undefined if unsynced
+          salesOrderNumber: salesId,
+          remarks: "",
+          total: total?.toString(),
+          dateSold: new Date().toLocaleDateString(),
+          status: "pending",
+          items: selectedItems,
+        });
+      } else {
+        Alert.alert("Error! No customer or item selected.");
+      }
+    } catch (error) {
+      console.log(error);
+    }
 
     setIsSubmitting(false);
   };

@@ -146,8 +146,6 @@ const salesorder = () => {
   useEffect(() => {
     if (address) {
       getCustomers().then((customers) => {
-        console.log(customers);
-
         setCustomersList(customers);
       });
       setIsLoadingCustomer(false);

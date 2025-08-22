@@ -15,7 +15,6 @@ const API_BASE = process.env.EXPO_PUBLIC_API_LINK;
  * Safe fetch helper that catches API/network errors
  */
 async function safeFetch(url: string, type = "get") {
-  const db = await getDB();
   const medRepData = await getMedRepData();
 
   try {
@@ -54,7 +53,7 @@ export async function syncCustomers() {
     await db
       .insert(customers)
       .values({
-        id: cust.id,
+        onlineId: cust.id,
         name: cust.name,
         fullAddress: cust.full_address,
         shortAddress: cust.short_address,
@@ -70,7 +69,7 @@ export async function syncCustomers() {
         syncDate: cust.sync_date,
       })
       .onConflictDoUpdate({
-        target: customers.id,
+        target: customers.onlineId,
         set: {
           name: cust.name,
           fullAddress: cust.full_address,
@@ -105,7 +104,7 @@ export async function syncItems() {
     await db
       .insert(items)
       .values({
-        id: item.id,
+        onlineId: item.id,
         brandName: item.brand_name,
         genericName: item.generic_name,
         milligrams: item.milligrams,
@@ -115,7 +114,7 @@ export async function syncItems() {
         inventory: item.inventory,
       })
       .onConflictDoUpdate({
-        target: items.id,
+        target: items.onlineId,
         set: {
           brandName: item.brand_name,
           genericName: item.generic_name,
@@ -144,7 +143,7 @@ export async function syncSalesOrder() {
     await db
       .insert(salesOrders)
       .values({
-        id: salesOrder.id,
+        onlineId: salesOrder.id,
         customerId: salesOrder.customer_id,
         medicalRepresentativeId: salesOrder.medical_representative_id,
         salesOrderNumber: salesOrder.sales_order_number,
@@ -155,7 +154,7 @@ export async function syncSalesOrder() {
         status: salesOrder.status,
       })
       .onConflictDoUpdate({
-        target: salesOrders.id,
+        target: salesOrders.onlineId,
         set: {
           customerId: salesOrder.customer_id,
           medicalRepresentativeId: salesOrder.medical_representative_id,
@@ -172,7 +171,7 @@ export async function syncSalesOrder() {
       await db
         .insert(salesOrderItems)
         .values({
-          id: salesOrderItem.id,
+          onlineId: salesOrderItem.id,
           salesOrderId: salesOrderItem.sales_order_id,
           itemId: salesOrder.item_id,
           quantity: salesOrderItem.quantity,
@@ -184,7 +183,7 @@ export async function syncSalesOrder() {
           total: salesOrderItem.total,
         })
         .onConflictDoUpdate({
-          target: salesOrderItems.id,
+          target: salesOrderItems.onlineId,
           set: {
             salesOrderId: salesOrderItem.sales_order_id,
             itemId: salesOrder.item_id,
@@ -206,6 +205,7 @@ export async function syncSalesOrder() {
 export async function syncLocalSalesOrders() {
   const db = await getDB();
   const nowDate = new Date().toLocaleDateString();
+  const medRepData = await getMedRepData();
 
   // Step 1: Get unsynced orders
   const unsyncedOrders = await db
@@ -219,7 +219,7 @@ export async function syncLocalSalesOrders() {
   }
 
   // Step 2: Collect IDs
-  const orderIds = unsyncedOrders.map((o) => o.id);
+  const orderIds = unsyncedOrders.map((o) => (o.onlineId ? o.onlineId : 0));
 
   // Step 3: Get items for these orders
   const items = await db
@@ -240,13 +240,18 @@ export async function syncLocalSalesOrders() {
   for (const order of unsyncedOrders) {
     const payload = {
       ...order,
-      items: itemsByOrder[order.id] ?? [],
+      items: order.onlineId ? itemsByOrder[order.onlineId] ?? [] : [],
     };
 
     try {
       const res = await fetch(routes.salesCreate, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+          "X-API-KEY": `${medRepData[0]?.apiKey}`,
+          "X-API-APP-KEY": `${medRepData[0]?.salesOrderAppId}`,
+        },
         body: JSON.stringify(payload),
       });
 
@@ -269,6 +274,7 @@ export async function syncLocalSalesOrders() {
 export async function syncLocalCustomers() {
   const db = await getDB();
   const nowDate = new Date().toLocaleDateString();
+  const medRepData = await getMedRepData();
 
   // 1. Get unsynced customers
   const unsyncedCustomers = await db
@@ -284,7 +290,7 @@ export async function syncLocalCustomers() {
   // 2. Send each unsynced customer to API
   for (const cust of unsyncedCustomers) {
     const payload = {
-      id: cust.id,
+      id: cust.onlineId,
       name: cust.name,
       full_address: cust.fullAddress,
       short_address: cust.shortAddress,
@@ -303,16 +309,30 @@ export async function syncLocalCustomers() {
     try {
       const res = await fetch(routes.customersCreate, {
         method: "POST", // or PUT if updating
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+          "X-API-KEY": `${medRepData[0]?.apiKey}`,
+          "X-API-APP-KEY": `${medRepData[0]?.salesOrderAppId}`,
+        },
         body: JSON.stringify(payload),
       });
 
       if (res.ok) {
         // 3. Mark as synced
+        const data = await res.json();
+
+        // update customers table
         await db
           .update(customers)
-          .set({ syncDate: nowDate })
+          .set({ syncDate: nowDate, onlineId: data.data?.customer_id })
           .where(eq(customers.id, cust.id));
+
+        // update all sales order with customer id
+        await db
+          .update(salesOrders)
+          .set({ customerOnlineId: data.data?.customer_id })
+          .where(eq(salesOrders.customerId, cust.id));
 
         console.log(`✅ Customer ${cust.id} synced`);
       } else {

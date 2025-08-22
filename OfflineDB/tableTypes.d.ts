@@ -1,5 +1,6 @@
 export type CustomersTableType = {
   id: number;
+  onlineId: number | null;
   name: string;
   fullAddress: string;
   shortAddress: string;
@@ -20,6 +21,7 @@ export type CustomersTableType = {
 
 export type ItemsTableType = {
   id: number;
+  onlineId: number | null;
   brandName: string | null;
   genericName: string | null;
   milligrams: string | null;

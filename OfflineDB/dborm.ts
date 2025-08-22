@@ -115,10 +115,10 @@ export async function setSalesOrder(salesOrder: CreateSalesOrderType) {
   const db = await getDB();
   const medrep = await getMedRepData();
 
-  await db
-    .insert(salesOrdersSchema)
-    .values({
+  try {
+    const so = await db.insert(salesOrdersSchema).values({
       customerId: salesOrder.customerId,
+      customerOnlineId: salesOrder.customerOnlineId,
       medicalRepresentativeId: medrep[0]?.id,
       salesOrderNumber: salesOrder.salesOrderNumber,
       dateSold: salesOrder.dateSold,
@@ -126,48 +126,26 @@ export async function setSalesOrder(salesOrder: CreateSalesOrderType) {
       remarks: salesOrder.remarks,
       syncDate: "",
       status: "pending",
-    })
-    .onConflictDoUpdate({
-      target: salesOrdersSchema.id,
-      set: {
-        customerId: salesOrder.customerId,
-        medicalRepresentativeId: medrep[0]?.id,
-        salesOrderNumber: salesOrder.salesOrderNumber,
-        dateSold: salesOrder.dateSold,
-        total: salesOrder.total,
-        remarks: salesOrder.remarks,
-        syncDate: "",
-        status: "pending",
-      },
     });
 
-  for (const salesOrderItem of salesOrder?.items) {
-    await db
-      .insert(salesOrderItems)
-      .values({
-        salesOrderId: 1,
+    for (const salesOrderItem of salesOrder?.items) {
+      await db.insert(salesOrderItems).values({
+        salesOrderId: 0,
+        salesOrderOfflineId: so.lastInsertRowId,
         itemId: salesOrderItem.product_id,
-        quantity: salesOrderItem.quantity,
+        quantity: salesOrderItem.quantity.toString(),
         promo: salesOrderItem.promo,
-        discount: salesOrderItem.discount,
-        freeItemQuantity: salesOrderItem.freeItemQuantity,
+        discount: salesOrderItem.discount?.toString(),
+        freeItemQuantity: salesOrderItem.freeItemQuantity?.toString(),
         freeItemRemarks: salesOrderItem.freeItemRemarks,
         remarks: salesOrderItem.remarks,
         total: salesOrderItem.total,
-      })
-      .onConflictDoUpdate({
-        target: salesOrderItems.id,
-        set: {
-          salesOrderId: 1,
-          itemId: salesOrderItem.product_id,
-          quantity: salesOrderItem.quantity.toString(),
-          promo: salesOrderItem.promo,
-          discount: salesOrderItem.discount.toString() ?? "",
-          freeItemQuantity: salesOrderItem.freeItemQuantity.toString() ?? "",
-          freeItemRemarks: salesOrderItem.freeItemRemarks,
-          remarks: salesOrderItem.remarks,
-          total: salesOrderItem.total,
-        },
       });
+    }
+
+    return true;
+  } catch (error) {
+    console.error(`❌ Failed to fetch :`, error);
+    return null;
   }
 }
