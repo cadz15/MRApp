@@ -1,6 +1,7 @@
 import { routes } from "@/constants/Routes";
 import { eq, inArray } from "drizzle-orm";
 import { getDB } from "./db";
+import { getCustomerFromLocalDB } from "./dborm";
 import {
   customers,
   items,
@@ -50,27 +51,11 @@ export async function syncCustomers() {
   }
 
   for (const cust of remoteCustomers?.data) {
-    await db
-      .insert(customers)
-      .values({
-        onlineId: cust.id,
-        name: cust.name,
-        fullAddress: cust.full_address,
-        shortAddress: cust.short_address,
-        region: cust.region,
-        class: cust.class,
-        practice: cust.practice,
-        s3License: cust.s3_license,
-        s3Validity: cust.s3_validity,
-        pharmacistName: cust.pharmacist_name,
-        prcId: cust.prc_id,
-        prcValidity: cust.prc_validity,
-        remarks: cust.remarks,
-        syncDate: cust.sync_date,
-      })
-      .onConflictDoUpdate({
-        target: customers.onlineId,
-        set: {
+    try {
+      await db
+        .insert(customers)
+        .values({
+          onlineId: cust.id,
           name: cust.name,
           fullAddress: cust.full_address,
           shortAddress: cust.short_address,
@@ -83,9 +68,29 @@ export async function syncCustomers() {
           prcId: cust.prc_id,
           prcValidity: cust.prc_validity,
           remarks: cust.remarks,
-          syncDate: cust.sync_date,
-        },
-      });
+          syncDate: cust.sync_date ?? new Date().toLocaleDateString(),
+        })
+        .onConflictDoUpdate({
+          target: customers.onlineId,
+          set: {
+            name: cust.name,
+            fullAddress: cust.full_address,
+            shortAddress: cust.short_address,
+            region: cust.region,
+            class: cust.class,
+            practice: cust.practice,
+            s3License: cust.s3_license,
+            s3Validity: cust.s3_validity,
+            pharmacistName: cust.pharmacist_name,
+            prcId: cust.prc_id,
+            prcValidity: cust.prc_validity,
+            remarks: cust.remarks,
+            syncDate: cust.sync_date ?? new Date().toLocaleDateString(),
+          },
+        });
+    } catch (error) {
+      console.error(`❌ Sync error for customers:`, error);
+    }
   }
 
   console.log(`✅ Synced ${remoteCustomers?.data.length} customers`);
@@ -101,21 +106,11 @@ export async function syncItems() {
   }
 
   for (const item of remoteItems?.data) {
-    await db
-      .insert(items)
-      .values({
-        onlineId: item.id,
-        brandName: item.brand_name,
-        genericName: item.generic_name,
-        milligrams: item.milligrams,
-        supply: item.supply,
-        catalogPrice: item.catalog_price,
-        productType: item.product_type,
-        inventory: item.inventory,
-      })
-      .onConflictDoUpdate({
-        target: items.onlineId,
-        set: {
+    try {
+      await db
+        .insert(items)
+        .values({
+          onlineId: item.id,
           brandName: item.brand_name,
           genericName: item.generic_name,
           milligrams: item.milligrams,
@@ -123,8 +118,22 @@ export async function syncItems() {
           catalogPrice: item.catalog_price,
           productType: item.product_type,
           inventory: item.inventory,
-        },
-      });
+        })
+        .onConflictDoUpdate({
+          target: items.onlineId,
+          set: {
+            brandName: item.brand_name,
+            genericName: item.generic_name,
+            milligrams: item.milligrams,
+            supply: item.supply,
+            catalogPrice: item.catalog_price,
+            productType: item.product_type,
+            inventory: item.inventory,
+          },
+        });
+    } catch (error) {
+      console.error(`❌ Sync error for items:`, error);
+    }
   }
 
   console.log(`✅ Synced ${remoteItems?.data.length} items`);
@@ -140,11 +149,16 @@ export async function syncSalesOrder() {
   }
 
   for (const salesOrder of remoteSalesOrders?.data) {
-    await db
+    const selectedCustomerData = await getCustomerFromLocalDB(
+      salesOrder.customer_id
+    );
+
+    const offlineSaleOrder = await db
       .insert(salesOrders)
       .values({
         onlineId: salesOrder.id,
-        customerId: salesOrder.customer_id,
+        customerId: selectedCustomerData?.id,
+        customerOnlineId: salesOrder.customer_id,
         medicalRepresentativeId: salesOrder.medical_representative_id,
         salesOrderNumber: salesOrder.sales_order_number,
         dateSold: salesOrder.date_sold,
@@ -156,7 +170,8 @@ export async function syncSalesOrder() {
       .onConflictDoUpdate({
         target: salesOrders.onlineId,
         set: {
-          customerId: salesOrder.customer_id,
+          customerId: selectedCustomerData?.id,
+          customerOnlineId: salesOrder.customer_id,
           medicalRepresentativeId: salesOrder.medical_representative_id,
           salesOrderNumber: salesOrder.sales_order_number,
           dateSold: salesOrder.date_sold,
@@ -168,24 +183,13 @@ export async function syncSalesOrder() {
       });
 
     for (const salesOrderItem of salesOrder.sales_order_items) {
-      await db
-        .insert(salesOrderItems)
-        .values({
-          onlineId: salesOrderItem.id,
-          salesOrderId: salesOrderItem.sales_order_id,
-          itemId: salesOrder.item_id,
-          quantity: salesOrderItem.quantity,
-          promo: salesOrderItem.promo,
-          discount: salesOrderItem.discount,
-          freeItemQuantity: salesOrderItem.free_item_quantity,
-          freeItemRemarks: salesOrderItem.free_item_remarks,
-          remarks: salesOrderItem.remarks,
-          total: salesOrderItem.total,
-        })
-        .onConflictDoUpdate({
-          target: salesOrderItems.onlineId,
-          set: {
+      try {
+        await db
+          .insert(salesOrderItems)
+          .values({
+            onlineId: salesOrderItem.id,
             salesOrderId: salesOrderItem.sales_order_id,
+            salesOrderOfflineId: offlineSaleOrder.lastInsertRowId,
             itemId: salesOrder.item_id,
             quantity: salesOrderItem.quantity,
             promo: salesOrderItem.promo,
@@ -194,8 +198,25 @@ export async function syncSalesOrder() {
             freeItemRemarks: salesOrderItem.free_item_remarks,
             remarks: salesOrderItem.remarks,
             total: salesOrderItem.total,
-          },
-        });
+          })
+          .onConflictDoUpdate({
+            target: salesOrderItems.onlineId,
+            set: {
+              salesOrderId: salesOrderItem.sales_order_id,
+              salesOrderOfflineId: offlineSaleOrder.lastInsertRowId,
+              itemId: salesOrder.item_id,
+              quantity: salesOrderItem.quantity,
+              promo: salesOrderItem.promo,
+              discount: salesOrderItem.discount,
+              freeItemQuantity: salesOrderItem.free_item_quantity,
+              freeItemRemarks: salesOrderItem.free_item_remarks,
+              remarks: salesOrderItem.remarks,
+              total: salesOrderItem.total,
+            },
+          });
+      } catch (error) {
+        console.error(`❌ Sync error for items:`, error);
+      }
     }
   }
 
@@ -238,9 +259,10 @@ export async function syncLocalSalesOrders() {
 
   // Step 5: Sync each order with its items
   for (const order of unsyncedOrders) {
+    const items = itemsByOrder[0];
     const payload = {
       ...order,
-      items: order.onlineId ? itemsByOrder[order.onlineId] ?? [] : [],
+      items: items.filter((item) => item.salesOrderOfflineId === order.id),
     };
 
     try {
@@ -253,18 +275,37 @@ export async function syncLocalSalesOrders() {
           "X-API-APP-KEY": `${medRepData[0]?.salesOrderAppId}`,
         },
         body: JSON.stringify(payload),
+      }).then((response) => {
+        console.log(response.json());
       });
 
-      if (res.ok) {
-        await db
-          .update(salesOrders)
-          .set({ syncDate: `${nowDate}` })
-          .where(eq(salesOrders.id, order.id));
+      // if (res.ok) {
+      //   const response = await res.json();
+      //   console.log(response.body);
 
-        console.log(`✅ Sales order ${order.id} synced with items`);
-      } else {
-        console.warn(`⚠️ Failed to sync order ${order.id} (${res.status})`);
-      }
+      //   await db
+      //     .update(salesOrders)
+      //     .set({
+      //       syncDate: `${nowDate}`,
+      //       onlineId: response?.body.salesOrderId,
+      //     })
+      //     .where(eq(salesOrders.id, order.id));
+
+      //   response?.body.salesItemIds.forEach(async (item: { key: number }) => {
+      //     const [key, value] = Object.entries(item)[0]; // Get the first key-value pair
+
+      //     if (value) {
+      //       await db
+      //         .update(salesOrderItems)
+      //         .set({ onlineId: value })
+      //         .where(eq(salesOrderItems.id, parseInt(key)));
+      //     }
+      //   });
+
+      //   console.log(`✅ Sales order ${order.id} synced with items`);
+      // } else {
+      //   console.warn(`⚠️ Failed to sync order ${order.id} (${res.status})`);
+      // }
     } catch (err) {
       console.error(`❌ Sync error for order ${order.id}:`, err);
     }
@@ -305,6 +346,8 @@ export async function syncLocalCustomers() {
       remarks: cust.remarks,
       sync_date: cust.syncDate,
     };
+
+    console.log("Sync Customer Payload: ", JSON.stringify(payload));
 
     try {
       const res = await fetch(routes.customersCreate, {

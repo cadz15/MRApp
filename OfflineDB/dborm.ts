@@ -149,3 +149,50 @@ export async function setSalesOrder(salesOrder: CreateSalesOrderType) {
     return null;
   }
 }
+
+export async function getCustomerFromLocalDB(id: number) {
+  const db = await getDB();
+
+  try {
+    const result = await db
+      .select()
+      .from(customers)
+      .where(eq(customers.onlineId, id));
+
+    return result[0];
+  } catch (err) {
+    console.error(`❌ Failed to fetch :`, err);
+    return null;
+  }
+}
+
+export async function getSalesListTable() {
+  const db = await getDB();
+
+  try {
+    const result = await db
+      .select()
+      .from(salesOrdersSchema)
+      .innerJoin(customers, eq(salesOrdersSchema.customerId, customers.id))
+      .orderBy(salesOrdersSchema.dateSold);
+
+    if (result) {
+      const data = result.map((r) => {
+        return {
+          orderId: r.sales_orders.id,
+          customerName: r.customers.name,
+          dateSold: r.sales_orders.dateSold,
+          status: r.sales_orders.status,
+          total: r.sales_orders.total,
+        };
+      });
+
+      return data;
+    }
+
+    return null;
+  } catch (err) {
+    console.error(`❌ Failed to fetch :`, err);
+    return null;
+  }
+}

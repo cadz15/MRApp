@@ -33,3 +33,32 @@ export type ItemsTableType = {
   updatedAt: string | null;
   deletedAt: string | null;
 };
+
+export type MedicalRepresentativeTableType = {
+  id: number;
+  onlineId: number | null;
+  name: string | null;
+  apiKey: string | null;
+  productAppId: string | null;
+  salesOrderAppId: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+  deletedAt: string | null;
+};
+
+export type salesOrderTableType = {
+  id: number;
+  onlineId: number | null;
+  customerId: number | null;
+  customerOnlineId: number | null;
+  medicalRepresentativeId: number;
+  salesOrderNumber: string;
+  dateSold: string;
+  total: string;
+  remarks: string | null;
+  syncDate: string | null;
+  status: string;
+  createdAt: string | null;
+  updatedAt: string | null;
+  deletedAt: string | null;
+};

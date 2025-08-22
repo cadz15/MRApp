@@ -1,6 +1,6 @@
 import { formattedCurrency } from "@/constants/Currency";
 import { useDB } from "@/context/DBProvider";
-import { customers } from "@/OfflineDB/schema";
+import { getSalesListTable } from "@/OfflineDB/dborm";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import React, { useEffect, useState } from "react";
 import {
@@ -12,6 +12,14 @@ import {
   View,
 } from "react-native";
 
+type TableResultType = {
+  orderId: number;
+  customerName: string;
+  dateSold: string;
+  status: string;
+  total: string;
+};
+
 type TableDataType = {
   orderId: number;
   total: number;
@@ -21,27 +29,23 @@ type TableDataType = {
 };
 
 type RenderPropType = {
-  item: TableDataType;
+  item: TableResultType;
   index: number;
 };
 
-const headers = ["Customer", "Date", "Total Sales"];
+const headers = ["Customer", "Date", "Status", "Total Sales"];
 
 const AppTable = () => {
-  const [salesOrders, setSalesOrders] = useState<any>([]);
+  const [salesOrders, setSalesOrders] = useState<TableResultType[] | null>(
+    null
+  );
   const [isRefreshing, setIsRefreshing] = useState(true);
   const db = useDB();
 
   async function loadSalesOrder() {
-    const latestSalesOrder = await db
-      .select({
-        orderId: salesOrders.id,
-        total: salesOrders.total,
-        customerId: salesOrders.customerId,
-        customerName: customers.name,
-        dateSold: salesOrders.dateSold,
-      })
-      .from(customers);
+    const latestSalesOrder = await getSalesListTable();
+
+    console.log(latestSalesOrder);
 
     setSalesOrders(latestSalesOrder);
   }
@@ -51,7 +55,9 @@ const AppTable = () => {
       <Text
         style={[
           styles.tableBodyText,
-          index !== salesOrders.length - 1 ? styles.tableBorderBottom : null,
+          index !== (salesOrders ? salesOrders.length - 1 : 0)
+            ? styles.tableBorderBottom
+            : null,
         ]}
       >
         {item.customerName}
@@ -59,7 +65,9 @@ const AppTable = () => {
       <Text
         style={[
           styles.tableBodyText,
-          index !== salesOrders.length - 1 ? styles.tableBorderBottom : null,
+          index !== (salesOrders ? salesOrders.length - 1 : 0)
+            ? styles.tableBorderBottom
+            : null,
         ]}
       >
         {item.dateSold}
@@ -67,7 +75,19 @@ const AppTable = () => {
       <Text
         style={[
           styles.tableBodyText,
-          index !== salesOrders.length - 1 ? styles.tableBorderBottom : null,
+          index !== (salesOrders ? salesOrders.length - 1 : 0)
+            ? styles.tableBorderBottom
+            : null,
+        ]}
+      >
+        {item.status}
+      </Text>
+      <Text
+        style={[
+          styles.tableBodyText,
+          index !== (salesOrders ? salesOrders.length - 1 : 0)
+            ? styles.tableBorderBottom
+            : null,
         ]}
       >
         {formattedCurrency(item.total)}
@@ -111,7 +131,7 @@ const AppTable = () => {
           <FlatList
             data={salesOrders}
             renderItem={renderItem}
-            keyExtractor={(item) => item.orderId.toString()}
+            keyExtractor={(item) => item?.orderId.toString()}
             refreshControl={
               <RefreshControl
                 onRefresh={() => setIsRefreshing(true)}

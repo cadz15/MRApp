@@ -2,6 +2,7 @@ import { useDB } from "@/context/DBProvider";
 import migrations from "@/drizzle/migrations";
 import { getSqliteInstance } from "@/OfflineDB/db";
 import { getMedRepData } from "@/OfflineDB/sync";
+import { MedicalRepresentativeTableType } from "@/OfflineDB/tableTypes";
 import { useMigrations } from "drizzle-orm/expo-sqlite/migrator";
 import { useDrizzleStudio } from "expo-drizzle-studio-plugin";
 import { Stack } from "expo-router";
@@ -12,8 +13,9 @@ import FirstLoading from "./firstloading";
 
 const CheckAPI = () => {
   const [hasAPI, setHasAPI] = useState(false);
-  const [medRepData, setMedRepData] = useState(null);
-  const [apiAccessible, setApiAccessible] = useState(true);
+  const [medRepData, setMedRepData] =
+    useState<MedicalRepresentativeTableType | null>(null);
+  const [apiAccessible, setApiAccessible] = useState("black");
 
   const API_URL = `${process.env.EXPO_PUBLIC_API_LINK}/ping`;
 
@@ -27,31 +29,39 @@ const CheckAPI = () => {
     console.log(error);
   }
 
-  const checkMedrep = () => {
-    const medrep = getMedRepData();
+  const checkMedrep = async () => {
+    const medrep = await getMedRepData();
 
     return medrep;
   };
 
   const pingApi = async () => {
+    const medrepDataHere = await checkMedrep();
+
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
 
       const response = await fetch(API_URL, {
         method: "HEAD",
         signal: controller.signal,
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+          "X-API-KEY": `${medrepDataHere[0]?.apiKey}`,
+          "X-API-APP-KEY": `${medrepDataHere[0]?.salesOrderAppId}`,
+        },
       });
 
       clearTimeout(timeoutId);
 
       if (response.ok) {
-        setApiAccessible(true);
+        setApiAccessible("green");
       } else {
-        setApiAccessible(false);
+        setApiAccessible("black");
       }
     } catch (error) {
-      setApiAccessible(false);
+      setApiAccessible("black");
     }
   };
 
@@ -59,6 +69,7 @@ const CheckAPI = () => {
     checkMedrep().then((item) => {
       if (item.length > 0) {
         setHasAPI(true);
+        setMedRepData(item[0]);
       }
     });
 
@@ -70,10 +81,7 @@ const CheckAPI = () => {
 
   return (
     <SafeAreaView
-      style={[
-        styles.safeArea,
-        { backgroundColor: apiAccessible ? "green" : "black" },
-      ]}
+      style={[styles.safeArea, { backgroundColor: apiAccessible }]}
       edges={["top", "bottom", "left", "right"]}
     >
       <StatusBar hidden />

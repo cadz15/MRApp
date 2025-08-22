@@ -15,6 +15,20 @@
       "when": 1755678020453,
       "tag": "0001_violet_the_fury",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1755841918131,
+      "tag": "0002_big_doctor_faustus",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1755842758868,
+      "tag": "0003_useful_prodigy",
+      "breakpoints": true
     }
   ]
 }
