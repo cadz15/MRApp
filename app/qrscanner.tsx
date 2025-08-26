@@ -19,9 +19,18 @@ const QrScanner = () => {
   const handleBarCodeScanned = async ({ data }: any) => {
     setScanned(true);
     try {
-      await setMedrep(data);
-      setData("Please restart the app to continue!");
+      const response = await setMedrep(data);
+      if (response) {
+        setData("Please restart the app to continue!");
+      } else {
+        setData(
+          "Unable to connect to the server! Please check internet connection or contact admin."
+        );
+      }
     } catch (error) {
+      setData(
+        "Unable to connect to the server! Please check internet connection or contact admin."
+      );
       console.log("error qr: ", error);
     }
   };
