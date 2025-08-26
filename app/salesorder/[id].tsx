@@ -27,7 +27,7 @@ type RenderItemType = {
 
 export type CreateSalesOrderType = {
   customerId: number;
-  customerOnlineId?: number;
+  customerOnlineId?: number | null;
   medicalRepresentativeId?: number;
   salesOrderNumber: string;
   dateSold: string;
@@ -146,8 +146,8 @@ const CreateSalesOrder = () => {
     try {
       if (customer && selectedItems.length >= 1) {
         const success = await setSalesOrder({
-          customerId: customer?.id,
-          customerOnlineId: customer?.onlineId ?? undefined, // set undefined if unsynced
+          customerId: customer.id ?? 0,
+          customerOnlineId: customer?.onlineId ?? null, // set undefined if unsynced
           salesOrderNumber: salesId,
           remarks: "",
           total: total?.toString(),
@@ -169,9 +169,7 @@ const CreateSalesOrder = () => {
       }
     } catch (error) {
       console.log(error);
-      Alert.alert(
-        "Error! Unable to create sales order. Please contact developer."
-      );
+      Alert.alert("Error! Please contact developer.");
     }
 
     setIsSubmitting(false);

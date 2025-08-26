@@ -6,12 +6,16 @@ import { getDB } from "./db";
 import {
   customers,
   items,
-  medrep,
+  medrep as MedRepSchema,
   salesOrderItems,
   salesOrders as salesOrdersSchema,
 } from "./schema";
 import { getMedRepData } from "./sync";
-import { CustomersTableType } from "./tableTypes";
+import {
+  CustomersTableType,
+  salesOrderItemTableType,
+  salesOrderTableType,
+} from "./tableTypes";
 
 const generateRandomString = () => {
   const characters =
@@ -48,7 +52,7 @@ export async function setMedrep(apiKey: string) {
 
     if (medrepData?.data) {
       await db
-        .insert(medrep)
+        .insert(MedRepSchema)
         .values({
           id: 1,
           onlineId: medrepData?.data.id,
@@ -58,7 +62,7 @@ export async function setMedrep(apiKey: string) {
           salesOrderAppId: medrepData?.data.sales_order_app_id,
         })
         .onConflictDoUpdate({
-          target: medrep.id,
+          target: MedRepSchema.id,
           set: {
             onlineId: medrepData?.data.id,
             name: medrepData?.data.name,
@@ -120,31 +124,34 @@ export async function setSalesOrder(salesOrder: CreateSalesOrderType) {
   const medrep = await getMedRepData();
 
   try {
-    const so = await db.insert(salesOrdersSchema).values({
+    const salesOrderInsert: salesOrderTableType = {
+      onlineId: null,
       customerId: salesOrder.customerId,
-      customerOnlineId: salesOrder.customerOnlineId,
+      customerOnlineId: salesOrder.customerOnlineId ?? null,
       medicalRepresentativeId: medrep[0]?.id,
       salesOrderNumber: salesOrder.salesOrderNumber,
       dateSold: salesOrder.dateSold,
       total: salesOrder.total,
-      remarks: salesOrder.remarks,
+      remarks: salesOrder.remarks ?? null,
       syncDate: "",
       status: "pending",
-    });
+    };
+    const so = await db.insert(salesOrdersSchema).values(salesOrderInsert);
 
     for (const salesOrderItem of salesOrder?.items) {
-      await db.insert(salesOrderItems).values({
+      const salesItemInsert: salesOrderItemTableType = {
         salesOrderId: 0,
         salesOrderOfflineId: so.lastInsertRowId,
         itemId: salesOrderItem.product_id,
         quantity: salesOrderItem.quantity.toString(),
         promo: salesOrderItem.promo,
-        discount: salesOrderItem.discount?.toString(),
-        freeItemQuantity: salesOrderItem.freeItemQuantity?.toString(),
-        freeItemRemarks: salesOrderItem.freeItemRemarks,
-        remarks: salesOrderItem.remarks,
+        discount: salesOrderItem.discount?.toString() ?? null,
+        freeItemQuantity: salesOrderItem.freeItemQuantity?.toString() ?? null,
+        freeItemRemarks: salesOrderItem.freeItemRemarks ?? null,
+        remarks: salesOrderItem.remarks ?? null,
         total: salesOrderItem.total,
-      });
+      };
+      await db.insert(salesOrderItems).values(salesItemInsert);
     }
 
     return true;

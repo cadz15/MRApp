@@ -1,5 +1,5 @@
 export type CustomersTableType = {
-  id: number;
+  id?: number;
   onlineId: number | null;
   name: string;
   fullAddress: string;
@@ -14,13 +14,13 @@ export type CustomersTableType = {
   prcValidity: string | null;
   remarks: string | null;
   syncDate: string | null;
-  createdAt: string | null;
-  updatedAt: string | null;
-  deletedAt: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+  deletedAt?: string | null;
 };
 
 export type ItemsTableType = {
-  id: number;
+  id?: number;
   onlineId: number | null;
   brandName: string | null;
   genericName: string | null;
@@ -29,25 +29,25 @@ export type ItemsTableType = {
   catalogPrice: string;
   productType: string;
   inventory: number;
-  createdAt: string | null;
-  updatedAt: string | null;
-  deletedAt: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+  deletedAt?: string | null;
 };
 
 export type MedicalRepresentativeTableType = {
-  id: number;
+  id?: number;
   onlineId: number | null;
   name: string | null;
   apiKey: string | null;
   productAppId: string | null;
   salesOrderAppId: string | null;
-  createdAt: string | null;
-  updatedAt: string | null;
-  deletedAt: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+  deletedAt?: string | null;
 };
 
 export type salesOrderTableType = {
-  id: number;
+  id?: number;
   onlineId: number | null;
   customerId: number | null;
   customerOnlineId: number | null;
@@ -58,7 +58,25 @@ export type salesOrderTableType = {
   remarks: string | null;
   syncDate: string | null;
   status: string;
-  createdAt: string | null;
-  updatedAt: string | null;
-  deletedAt: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+  deletedAt?: string | null;
+};
+
+export type salesOrderItemTableType = {
+  id?: number;
+  onlineId?: number | null;
+  salesOrderId: number | null;
+  salesOrderOfflineId: number | null;
+  itemId: number;
+  quantity: string;
+  promo: string;
+  discount: string | null;
+  freeItemQuantity: string | null;
+  freeItemRemarks: string | null;
+  remarks: string | null;
+  total: number;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+  deletedAt?: string | null;
 };

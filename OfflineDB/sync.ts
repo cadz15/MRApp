@@ -166,7 +166,7 @@ export async function syncItems() {
 export async function syncSalesOrder() {
   const db = await getDB();
 
-  const remoteSalesOrders = await safeAxios(routes.salesorder);
+  const remoteSalesOrders = await safeAxios(`${routes.salesorder}`);
   if (!remoteSalesOrders) {
     console.log("⚠️ Skipping items sync (API unreachable)");
     return;

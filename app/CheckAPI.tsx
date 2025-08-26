@@ -1,11 +1,10 @@
+import SyncingPage from "@/components/SyncingPage";
 import { useDB } from "@/context/DBProvider";
 import migrations from "@/drizzle/migrations";
-import { getSqliteInstance } from "@/OfflineDB/db";
-import { getMedRepData } from "@/OfflineDB/sync";
+import { getMedRepData, syncDownData } from "@/OfflineDB/sync";
 import { MedicalRepresentativeTableType } from "@/OfflineDB/tableTypes";
 import axios from "axios";
 import { useMigrations } from "drizzle-orm/expo-sqlite/migrator";
-import { useDrizzleStudio } from "expo-drizzle-studio-plugin";
 import { Stack } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { StatusBar, StyleSheet } from "react-native";
@@ -14,13 +13,15 @@ import FirstLoading from "./firstloading";
 
 const CheckAPI = () => {
   const [hasAPI, setHasAPI] = useState(false);
+  const [syncing, setSyncing] = useState(true);
+  const [syncingValue, setSyncingValue] = useState(10);
   const [medRepData, setMedRepData] =
     useState<MedicalRepresentativeTableType | null>(null);
   const [apiAccessible, setApiAccessible] = useState("black");
 
   const API_URL = `${process.env.EXPO_PUBLIC_API_LINK}/ping`;
 
-  useDrizzleStudio(getSqliteInstance());
+  // useDrizzleStudio(getSqliteInstance());
 
   const db = useDB();
 
@@ -34,6 +35,14 @@ const CheckAPI = () => {
     const medrep = await getMedRepData();
 
     return medrep;
+  };
+
+  const syncData = () => {
+    setSyncing(true);
+    setSyncingValue(50);
+    syncDownData().then((resp) => setSyncing(false));
+
+    setSyncingValue(100);
   };
 
   const pingApi = async () => {
@@ -71,6 +80,8 @@ const CheckAPI = () => {
         setHasAPI(true);
 
         setMedRepData(item[0]);
+        setSyncing(true);
+        syncData();
       }
     });
 
@@ -87,42 +98,46 @@ const CheckAPI = () => {
     >
       <StatusBar hidden />
       {hasAPI ? (
-        <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen
-            name="pages/salesorder"
-            options={{
-              headerShown: false,
-              headerTitleStyle: { fontFamily: "mon-sb" },
-              animation: "slide_from_right",
-            }}
-          />
-          <Stack.Screen
-            name="pages/createsale"
-            options={{
-              headerShown: false,
-              headerTitleStyle: { fontFamily: "mon-sb" },
-              animation: "slide_from_right",
-            }}
-          />
-          <Stack.Screen
-            name="salesorder/[id]"
-            options={{
-              headerShown: false,
-              headerTitleStyle: { fontFamily: "mon-sb" },
-              animation: "slide_from_right",
-            }}
-          />
-          <Stack.Screen
-            name="pages/createcustomer"
-            options={{
-              headerShown: false,
-              headerTitleStyle: { fontFamily: "mon-sb" },
-              animation: "slide_from_right",
-            }}
-          />
-          <Stack.Screen name="+not-found" />
-        </Stack>
+        syncing ? (
+          <SyncingPage percentValue={syncingValue} />
+        ) : (
+          <Stack>
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen
+              name="pages/salesorder"
+              options={{
+                headerShown: false,
+                headerTitleStyle: { fontFamily: "mon-sb" },
+                animation: "slide_from_right",
+              }}
+            />
+            <Stack.Screen
+              name="pages/createsale"
+              options={{
+                headerShown: false,
+                headerTitleStyle: { fontFamily: "mon-sb" },
+                animation: "slide_from_right",
+              }}
+            />
+            <Stack.Screen
+              name="salesorder/[id]"
+              options={{
+                headerShown: false,
+                headerTitleStyle: { fontFamily: "mon-sb" },
+                animation: "slide_from_right",
+              }}
+            />
+            <Stack.Screen
+              name="pages/createcustomer"
+              options={{
+                headerShown: false,
+                headerTitleStyle: { fontFamily: "mon-sb" },
+                animation: "slide_from_right",
+              }}
+            />
+            <Stack.Screen name="+not-found" />
+          </Stack>
+        )
       ) : (
         <>
           <FirstLoading />
