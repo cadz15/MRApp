@@ -113,6 +113,14 @@ const CheckAPI = () => {
               animation: "slide_from_right",
             }}
           />
+          <Stack.Screen
+            name="pages/createcustomer"
+            options={{
+              headerShown: false,
+              headerTitleStyle: { fontFamily: "mon-sb" },
+              animation: "slide_from_right",
+            }}
+          />
           <Stack.Screen name="+not-found" />
         </Stack>
       ) : (

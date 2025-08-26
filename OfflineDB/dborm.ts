@@ -1,7 +1,7 @@
 import { CreateSalesOrderType } from "@/app/salesorder/[id]";
 import { routes } from "@/constants/Routes";
 import axios from "axios";
-import { eq, notLike } from "drizzle-orm";
+import { desc, eq, notLike } from "drizzle-orm";
 import { getDB } from "./db";
 import {
   customers,
@@ -11,6 +11,7 @@ import {
   salesOrders as salesOrdersSchema,
 } from "./schema";
 import { getMedRepData } from "./sync";
+import { CustomersTableType } from "./tableTypes";
 
 const generateRandomString = () => {
   const characters =
@@ -177,7 +178,7 @@ export async function getSalesListTable() {
       .select()
       .from(salesOrdersSchema)
       .innerJoin(customers, eq(salesOrdersSchema.customerId, customers.id))
-      .orderBy(salesOrdersSchema.dateSold);
+      .orderBy(desc(salesOrdersSchema.dateSold));
 
     if (result) {
       const data = result.map((r) => {
@@ -187,6 +188,7 @@ export async function getSalesListTable() {
           dateSold: r.sales_orders.dateSold,
           status: r.sales_orders.status,
           total: r.sales_orders.total,
+          dateSynced: r.sales_orders.syncDate,
         };
       });
 
@@ -199,3 +201,76 @@ export async function getSalesListTable() {
     return null;
   }
 }
+
+export async function setCustomer(data: CustomersTableType, onlineId = null) {
+  try {
+    const db = await getDB();
+
+    await db.insert(customers).values({
+      class: data.class,
+      fullAddress: data.fullAddress,
+      name: data.name,
+      region: data.region,
+      shortAddress: data.shortAddress,
+      pharmacistName: data.pharmacistName,
+      onlineId: onlineId,
+      practice: data.practice,
+      prcId: data.prcId,
+      prcValidity: data.prcValidity,
+      remarks: data.remarks,
+      s3License: data.s3License,
+      s3Validity: data.s3Validity,
+      syncDate: onlineId ? new Date().toLocaleDateString() : null,
+    });
+
+    return true;
+  } catch (err) {
+    console.error(`❌ Failed to create customer :`, err);
+    return false;
+  }
+}
+
+const getDailySalesTotal = async (date: string) => {
+  try {
+    const db = await getDB();
+
+    const result = await db.run(
+      `SELECT SUM(CAST(total AS REAL)) AS daily_sales_total
+       FROM sales_orders
+       WHERE date_sold = '${date}'`
+    );
+
+    return result[0] ? result[0].daily_sales_total : 0;
+  } catch (error) {
+    console.error("Error fetching daily sales total:", error);
+    return 0;
+  }
+};
+
+const getMostSoldProductType = async (date: string) => {
+  try {
+    const db = await getDB();
+
+    const result = await db
+      .select()
+      .from(salesOrdersSchema)
+      .join(salesOrderItems, salesOrderItems.salesOrderId, salesOrdersSchema.id)
+      .join(items, items.id, salesOrderItems.itemId)
+      .where(salesOrdersSchema.dateSold, date)
+      .groupBy(items.productType)
+      .orderBy(desc(salesOrderItems.quantity)) // Assuming you want to order by the total quantity
+      .limit(1); // Get the top-selling product type
+
+    if (result.length > 0) {
+      return {
+        productType: result[0].productType,
+        totalQuantitySold: result[0].quantity, // Adjust field name if needed
+      };
+    } else {
+      return { productType: "None", totalQuantitySold: 0 };
+    }
+  } catch (error) {
+    console.error("Error fetching most sold product type:", error);
+    return { productType: "None", totalQuantitySold: 0 };
+  }
+};

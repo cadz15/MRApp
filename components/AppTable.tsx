@@ -18,6 +18,7 @@ type TableResultType = {
   dateSold: string;
   status: string;
   total: string;
+  dateSynced?: string;
 };
 
 type TableDataType = {
@@ -33,7 +34,7 @@ type RenderPropType = {
   index: number;
 };
 
-const headers = ["Customer", "Date", "Status", "Total Sales"];
+const headers = ["Customer", "Date", "Status", "Total Sales", "Sync Date"];
 
 const AppTable = () => {
   const [salesOrders, setSalesOrders] = useState<TableResultType[] | null>(
@@ -91,6 +92,16 @@ const AppTable = () => {
         ]}
       >
         {formattedCurrency(item.total)}
+      </Text>
+      <Text
+        style={[
+          styles.tableBodyText,
+          index !== (salesOrders ? salesOrders.length - 1 : 0)
+            ? styles.tableBorderBottom
+            : null,
+        ]}
+      >
+        {item.dateSynced}
       </Text>
     </View>
   );

@@ -1,6 +1,7 @@
 import AppButton from "@/components/AppButton";
 import AppTable from "@/components/AppTable";
 import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
+import { Link } from "expo-router";
 import {
   ScrollView,
   StyleSheet,
@@ -13,12 +14,15 @@ export default function TabTwoScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.sidebar}>
-        <TouchableOpacity style={[styles.buttonNav, styles.borderBottom]}>
-          <Text style={styles.buttonNavText}>Create Sales Order</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={[styles.buttonNav, styles.borderBottom]}>
+        <Link
+          href="/pages/createcustomer"
+          style={[styles.buttonNav, styles.borderBottom]}
+        >
+          <Text style={styles.buttonNavText}>Create Customer</Text>
+        </Link>
+        {/* <TouchableOpacity style={[styles.buttonNav, styles.borderBottom]}>
           <Text style={styles.buttonNavText}>Sales List</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
         <TouchableOpacity style={[styles.buttonNav, styles.borderBottom]}>
           <Text style={styles.buttonNavText}>Report</Text>
         </TouchableOpacity>
@@ -32,14 +36,14 @@ export default function TabTwoScreen() {
           <View style={[styles.mainCard, styles.salesCard]}>
             <Text style={[styles.salesCardText]}>Daily Sales</Text>
             <Text style={[styles.salesCardText, styles.cardNumberText]}>
-              ₱ 20,000.00
+              ₱ 0
             </Text>
           </View>
           <View style={[styles.mainCard, styles.conversionCard]}>
             <Text style={[styles.conversionCardText]}>Daily Conversions</Text>
             <View>
               <Text style={[styles.conversionCardText, styles.cardNumberText]}>
-                1
+                0
               </Text>
               <Text
                 style={[
@@ -54,7 +58,7 @@ export default function TabTwoScreen() {
           <View style={[styles.mainCard, styles.popularCard]}>
             <Text style={[styles.popularCardText]}>Popular Product Type</Text>
             <Text style={[styles.popularCardText, styles.cardNumberText]}>
-              Exclusive
+              -
             </Text>
           </View>
         </View>
@@ -88,7 +92,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     width: 200,
     borderRadius: 15,
-    height: 150,
+    height: 110,
     padding: 10,
   },
   main: { flex: 1, flexDirection: "column", gap: 10 },

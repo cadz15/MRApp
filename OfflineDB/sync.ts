@@ -2,7 +2,7 @@ import { routes } from "@/constants/Routes";
 import axios from "axios";
 import { eq, inArray } from "drizzle-orm";
 import { getDB } from "./db";
-import { getCustomerFromLocalDB } from "./dborm";
+import { getCustomerFromLocalDB, setCustomer } from "./dborm";
 import {
   customers,
   items,
@@ -10,6 +10,7 @@ import {
   salesOrderItems,
   salesOrders,
 } from "./schema";
+import { CustomersTableType } from "./tableTypes";
 
 const API_BASE = process.env.EXPO_PUBLIC_API_LINK;
 
@@ -410,6 +411,38 @@ export async function syncLocalCustomers() {
       console.error(`❌ Sync error for customer ${cust.id}:`, err);
     }
   }
+}
+
+export async function uploadCustomer(data: CustomersTableType) {
+  try {
+    const medRepData = await getMedRepData();
+
+    const result = axios(routes.customersCreate, {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        "X-API-KEY": `${medRepData[0]?.apiKey}`,
+        "X-API-APP-KEY": `${medRepData[0]?.salesOrderAppId}`,
+      },
+      data: JSON.stringify(data),
+    });
+
+    if ((await result).status === 200) {
+      const id = (await result).data.id;
+      const localCustomer = await setCustomer(data, id);
+
+      return localCustomer;
+    } else {
+      await setCustomer(data);
+      return false;
+    }
+  } catch (error) {
+    console.error(`❌ Sync error`, error);
+    await setCustomer(data);
+  }
+
+  return false;
 }
 
 export async function getMedRepData() {

@@ -2,6 +2,7 @@ import SalesListModal from "@/components/Modal/SalesListModal";
 import SideModal, { ProductItemType } from "@/components/Modal/SideModal";
 import { formattedCurrency } from "@/constants/Currency";
 import { getCustomerFromDB, setSalesOrder } from "@/OfflineDB/dborm";
+import { syncUpData } from "@/OfflineDB/sync";
 import { CustomersTableType } from "@/OfflineDB/tableTypes";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import Feather from "@expo/vector-icons/Feather";
@@ -156,6 +157,7 @@ const CreateSalesOrder = () => {
         });
 
         if (success) {
+          await syncUpData();
           router.push("/(tabs)/explore");
         } else {
           Alert.alert(
