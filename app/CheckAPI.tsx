@@ -1,12 +1,10 @@
 import SyncingPage from "@/components/SyncingPage";
 import { useDB } from "@/context/DBProvider";
 import migrations from "@/drizzle/migrations";
-import { getSqliteInstance } from "@/OfflineDB/db";
 import { getMedRepData, syncDownData } from "@/OfflineDB/sync";
 import { MedicalRepresentativeTableType } from "@/OfflineDB/tableTypes";
 import axios from "axios";
 import { useMigrations } from "drizzle-orm/expo-sqlite/migrator";
-import { useDrizzleStudio } from "expo-drizzle-studio-plugin";
 import { Stack } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { StatusBar, StyleSheet } from "react-native";
@@ -23,7 +21,7 @@ const CheckAPI = () => {
 
   const API_URL = `${process.env.EXPO_PUBLIC_API_LINK}/ping`;
 
-  useDrizzleStudio(getSqliteInstance());
+  // useDrizzleStudio(getSqliteInstance());
 
   const db = useDB();
 
