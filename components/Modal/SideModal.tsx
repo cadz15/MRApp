@@ -109,7 +109,11 @@ const SideModal = ({ visible, onClose, onAddItem, withS3 }: SideModalType) => {
   };
 
   const handleAddItem = () => {
-    if (productItem.promo === "free" && !productItem?.freeItemQuantity) {
+    if (
+      productItem.promo === "free" &&
+      !productItem?.freeItemQuantity &&
+      !productItem?.freeItemRemarks
+    ) {
       alert("Please Add Free Item Quantity");
     } else if (productItem.promo === "discount" && !productItem?.discount) {
       alert("Please Add Discount");
