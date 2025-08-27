@@ -32,13 +32,13 @@ const SyncingPage = ({ percentValue }: { percentValue: number }) => {
 
     // Simulate progress updates
     const interval = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          return 100;
-        }
-        return prev + Math.random() * 10;
-      });
+      // setProgress((prev) => {
+      //   if (prev >= 100) {
+      //     clearInterval(interval);
+      //     return 100;
+      //   }
+      //   return prev + Math.random() * 10;
+      // });
     }, 500);
 
     return () => clearInterval(interval);

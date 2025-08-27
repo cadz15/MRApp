@@ -484,12 +484,14 @@ export async function getMedRepData() {
 
 export async function syncDownData() {
   try {
-    syncCustomers();
-    syncItems();
-    syncSalesOrder();
+    await syncCustomers();
+    await syncItems();
+    return await syncSalesOrder();
   } catch (error) {
     console.error(`❌ Sync error`, error);
   }
+
+  return true;
 }
 
 export async function syncUpData() {

@@ -1,7 +1,7 @@
 import SyncingPage from "@/components/SyncingPage";
 import { useDB } from "@/context/DBProvider";
 import migrations from "@/drizzle/migrations";
-import { getMedRepData, syncDownData } from "@/OfflineDB/sync";
+import { getMedRepData } from "@/OfflineDB/sync";
 import { MedicalRepresentativeTableType } from "@/OfflineDB/tableTypes";
 import axios from "axios";
 import { useMigrations } from "drizzle-orm/expo-sqlite/migrator";
@@ -40,8 +40,9 @@ const CheckAPI = () => {
   const syncData = () => {
     setSyncing(true);
     setSyncingValue(50);
-    syncDownData().then((resp) => setSyncing(false));
+    // syncDownData().then((resp) => setSyncing(false));
 
+    setSyncing(false);
     setSyncingValue(100);
   };
 
