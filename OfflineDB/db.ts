@@ -16,8 +16,9 @@ async function ensureDBDir() {
 
 let dbInstance: ReturnType<typeof drizzle> | null = null;
 
-export async function getSqliteInstance() {
-  const sql = await SQLite.openDatabaseAsync(DB_PATH);
+export function getSqliteInstance() {
+  // const sql = await SQLite.openDatabaseAsync(DB_PATH);
+  const sql = SQLite.openDatabaseSync(DB_PATH);
 
   return sql;
 }
@@ -25,7 +26,8 @@ export async function getSqliteInstance() {
 export async function getDB() {
   if (!dbInstance) {
     await ensureDBDir();
-    const sqlite = await getSqliteInstance();
+    // const sqlite = await getSqliteInstance();
+    const sqlite = getSqliteInstance();
 
     dbInstance = drizzle(sqlite, { schema });
   }

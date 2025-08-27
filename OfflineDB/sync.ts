@@ -93,6 +93,9 @@ export async function syncCustomers() {
           prcValidity: cust.prc_validity,
           remarks: cust.remarks,
           syncDate: cust.sync_date ?? new Date().toLocaleDateString(),
+          createdAt: cust.created_at,
+          updatedAt: cust.updated_at,
+          deletedAt: cust.deleted_at ?? "",
         })
         .onConflictDoUpdate({
           target: customers.onlineId,
@@ -110,6 +113,9 @@ export async function syncCustomers() {
             prcValidity: cust.prc_validity,
             remarks: cust.remarks,
             syncDate: cust.sync_date ?? new Date().toLocaleDateString(),
+            createdAt: cust.created_at,
+            updatedAt: cust.updated_at,
+            deletedAt: cust.deleted_at ?? "",
           },
         });
     } catch (error) {
@@ -142,6 +148,9 @@ export async function syncItems() {
           catalogPrice: item.catalog_price,
           productType: item.product_type,
           inventory: item.inventory,
+          createdAt: item.created_at,
+          updatedAt: item.updated_at,
+          deletedAt: item.deleted_at ?? "",
         })
         .onConflictDoUpdate({
           target: items.onlineId,
@@ -153,6 +162,9 @@ export async function syncItems() {
             catalogPrice: item.catalog_price,
             productType: item.product_type,
             inventory: item.inventory,
+            createdAt: item.created_at,
+            updatedAt: item.updated_at,
+            deletedAt: item.deleted_at ?? "",
           },
         });
     } catch (error) {
@@ -190,6 +202,9 @@ export async function syncSalesOrder() {
         remarks: salesOrder.remarks,
         syncDate: salesOrder.sync_date,
         status: salesOrder.status,
+        createdAt: salesOrder.created_at,
+        updatedAt: salesOrder.updated_at,
+        deletedAt: salesOrder.deleted_at ?? "",
       })
       .onConflictDoUpdate({
         target: salesOrders.onlineId,
@@ -203,6 +218,9 @@ export async function syncSalesOrder() {
           remarks: salesOrder.remarks,
           syncDate: salesOrder.sync_date,
           status: salesOrder.status,
+          createdAt: salesOrder.created_at,
+          updatedAt: salesOrder.updated_at,
+          deletedAt: salesOrder.deleted_at ?? "",
         },
       });
 
@@ -222,6 +240,9 @@ export async function syncSalesOrder() {
             freeItemRemarks: salesOrderItem.free_item_remarks,
             remarks: salesOrderItem.remarks,
             total: salesOrderItem.total,
+            createdAt: salesOrderItem.created_at,
+            updatedAt: salesOrderItem.updated_at,
+            deletedAt: salesOrderItem.deleted_at ?? "",
           })
           .onConflictDoUpdate({
             target: salesOrderItems.onlineId,
@@ -236,6 +257,9 @@ export async function syncSalesOrder() {
               freeItemRemarks: salesOrderItem.free_item_remarks,
               remarks: salesOrderItem.remarks,
               total: salesOrderItem.total,
+              createdAt: salesOrderItem.created_at,
+              updatedAt: salesOrderItem.updated_at,
+              deletedAt: salesOrderItem.deleted_at ?? "",
             },
           });
       } catch (error) {

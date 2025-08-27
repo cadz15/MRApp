@@ -1,7 +1,7 @@
 import { CreateSalesOrderType } from "@/app/salesorder/[id]";
 import { routes } from "@/constants/Routes";
 import axios from "axios";
-import { desc, eq, notLike } from "drizzle-orm";
+import { and, desc, eq, notLike } from "drizzle-orm";
 import { getDB } from "./db";
 import {
   customers,
@@ -89,7 +89,7 @@ export async function getCustomerFromDB(id: number) {
     const result = await db
       .select()
       .from(customers)
-      .where(eq(customers.id, id));
+      .where(and(eq(customers.id, id), eq(customers.deletedAt, "")));
 
     return result;
   } catch (err) {
@@ -103,14 +103,19 @@ export async function getItemsFromDB(withS3: boolean) {
 
   try {
     if (withS3) {
-      const result = await db.select().from(items);
+      const result = await db
+        .select()
+        .from(items)
+        .where(eq(items.deletedAt, ""));
 
       return result;
     } else {
       const result = await db
         .select()
         .from(items)
-        .where(notLike(items.productType, "regulated"));
+        .where(
+          and(notLike(items.productType, "regulated"), eq(items.deletedAt, ""))
+        );
       return result;
     }
   } catch (err) {
@@ -168,7 +173,7 @@ export async function getCustomerFromLocalDB(id: number) {
     const result = await db
       .select()
       .from(customers)
-      .where(eq(customers.onlineId, id));
+      .where(and(eq(customers.onlineId, id), eq(customers.deletedAt, "")));
 
     return result[0];
   } catch (err) {
@@ -184,6 +189,7 @@ export async function getSalesListTable() {
     const result = await db
       .select()
       .from(salesOrdersSchema)
+      .where(eq(salesOrdersSchema.deletedAt, ""))
       .innerJoin(customers, eq(salesOrdersSchema.customerId, customers.id))
       .orderBy(desc(salesOrdersSchema.dateSold));
 

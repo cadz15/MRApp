@@ -85,6 +85,7 @@ const salesorder = () => {
     const result = await db
       .select({ region: customers.region })
       .from(customers)
+      .where(eq(customers.deletedAt, ""))
       .groupBy(customers.region); // ensures unique regions
 
     return result.map((r) => r.region);
@@ -95,7 +96,7 @@ const salesorder = () => {
     const result = await db
       .select({ shortAddress: customers.shortAddress })
       .from(customers)
-      .where(eq(customers.region, region))
+      .where(and(eq(customers.region, region), eq(customers.deletedAt, "")))
       .groupBy(customers.shortAddress); // ensures unique shortAddress
 
     return result.map((r) => r.shortAddress);
@@ -110,7 +111,11 @@ const salesorder = () => {
       })
       .from(customers)
       .where(
-        and(eq(customers.region, region), eq(customers.shortAddress, address))
+        and(
+          eq(customers.region, region),
+          eq(customers.shortAddress, address),
+          eq(customers.deletedAt, "")
+        )
       );
 
     return result;
