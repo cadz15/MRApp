@@ -140,6 +140,7 @@ export async function setSalesOrder(salesOrder: CreateSalesOrderType) {
       remarks: salesOrder.remarks ?? null,
       syncDate: "",
       status: "pending",
+      deletedAt: "",
     };
     const so = await db.insert(salesOrdersSchema).values(salesOrderInsert);
 
@@ -155,6 +156,7 @@ export async function setSalesOrder(salesOrder: CreateSalesOrderType) {
         freeItemRemarks: salesOrderItem.freeItemRemarks ?? null,
         remarks: salesOrderItem.remarks ?? null,
         total: salesOrderItem.total,
+        deletedAt: "",
       };
       await db.insert(salesOrderItems).values(salesItemInsert);
     }
@@ -234,6 +236,7 @@ export async function setCustomer(data: CustomersTableType, onlineId = null) {
       s3License: data.s3License,
       s3Validity: data.s3Validity,
       syncDate: onlineId ? new Date().toLocaleDateString() : null,
+      deletedAt: "",
     });
 
     return true;

@@ -186,32 +186,17 @@ export async function syncSalesOrder() {
 
   for (const salesOrder of remoteSalesOrders?.data) {
     const selectedCustomerData = await getCustomerFromLocalDB(
-      salesOrder.customer_id
+      salesOrder.customer?.id
     );
 
-    const offlineSaleOrder = await db
-      .insert(salesOrders)
-      .values({
-        onlineId: salesOrder.id,
-        customerId: selectedCustomerData?.id,
-        customerOnlineId: salesOrder.customer_id,
-        medicalRepresentativeId: salesOrder.medical_representative_id,
-        salesOrderNumber: salesOrder.sales_order_number,
-        dateSold: salesOrder.date_sold,
-        total: salesOrder.total,
-        remarks: salesOrder.remarks,
-        syncDate: salesOrder.sync_date,
-        status: salesOrder.status,
-        createdAt: salesOrder.created_at,
-        updatedAt: salesOrder.updated_at,
-        deletedAt: salesOrder.deleted_at ?? "",
-      })
-      .onConflictDoUpdate({
-        target: salesOrders.onlineId,
-        set: {
-          customerId: selectedCustomerData?.id,
+    try {
+      const offlineSaleOrder = await db
+        .insert(salesOrders)
+        .values({
+          onlineId: salesOrder.id,
+          customerId: selectedCustomerData?.id ?? null,
           customerOnlineId: salesOrder.customer_id,
-          medicalRepresentativeId: salesOrder.medical_representative_id,
+          medicalRepresentativeId: salesOrder.medical_representative.id,
           salesOrderNumber: salesOrder.sales_order_number,
           dateSold: salesOrder.date_sold,
           total: salesOrder.total,
@@ -221,32 +206,31 @@ export async function syncSalesOrder() {
           createdAt: salesOrder.created_at,
           updatedAt: salesOrder.updated_at,
           deletedAt: salesOrder.deleted_at ?? "",
-        },
-      });
+        })
+        .onConflictDoUpdate({
+          target: salesOrders.onlineId,
+          set: {
+            customerId: selectedCustomerData?.id ?? null,
+            customerOnlineId: salesOrder.customer_id,
+            medicalRepresentativeId: salesOrder.medical_representative_id,
+            salesOrderNumber: salesOrder.sales_order_number,
+            dateSold: salesOrder.date_sold,
+            total: salesOrder.total,
+            remarks: salesOrder.remarks,
+            syncDate: salesOrder.sync_date,
+            status: salesOrder.status,
+            createdAt: salesOrder.created_at,
+            updatedAt: salesOrder.updated_at,
+            deletedAt: salesOrder.deleted_at ?? "",
+          },
+        });
 
-    for (const salesOrderItem of salesOrder.sales_order_items) {
-      try {
-        await db
-          .insert(salesOrderItems)
-          .values({
-            onlineId: salesOrderItem.id,
-            salesOrderId: salesOrderItem.sales_order_id,
-            salesOrderOfflineId: offlineSaleOrder.lastInsertRowId,
-            itemId: salesOrder.item_id,
-            quantity: salesOrderItem.quantity,
-            promo: salesOrderItem.promo,
-            discount: salesOrderItem.discount,
-            freeItemQuantity: salesOrderItem.free_item_quantity,
-            freeItemRemarks: salesOrderItem.free_item_remarks,
-            remarks: salesOrderItem.remarks,
-            total: salesOrderItem.total,
-            createdAt: salesOrderItem.created_at,
-            updatedAt: salesOrderItem.updated_at,
-            deletedAt: salesOrderItem.deleted_at ?? "",
-          })
-          .onConflictDoUpdate({
-            target: salesOrderItems.onlineId,
-            set: {
+      for (const salesOrderItem of salesOrder.sales_order_items) {
+        try {
+          await db
+            .insert(salesOrderItems)
+            .values({
+              onlineId: salesOrderItem.id,
               salesOrderId: salesOrderItem.sales_order_id,
               salesOrderOfflineId: offlineSaleOrder.lastInsertRowId,
               itemId: salesOrder.item_id,
@@ -260,11 +244,31 @@ export async function syncSalesOrder() {
               createdAt: salesOrderItem.created_at,
               updatedAt: salesOrderItem.updated_at,
               deletedAt: salesOrderItem.deleted_at ?? "",
-            },
-          });
-      } catch (error) {
-        console.error(`❌ Sync error for items:`, error);
+            })
+            .onConflictDoUpdate({
+              target: salesOrderItems.onlineId,
+              set: {
+                salesOrderId: salesOrderItem.sales_order_id,
+                salesOrderOfflineId: offlineSaleOrder.lastInsertRowId,
+                itemId: salesOrder.item_id,
+                quantity: salesOrderItem.quantity,
+                promo: salesOrderItem.promo,
+                discount: salesOrderItem.discount,
+                freeItemQuantity: salesOrderItem.free_item_quantity,
+                freeItemRemarks: salesOrderItem.free_item_remarks,
+                remarks: salesOrderItem.remarks,
+                total: salesOrderItem.total,
+                createdAt: salesOrderItem.created_at,
+                updatedAt: salesOrderItem.updated_at,
+                deletedAt: salesOrderItem.deleted_at ?? "",
+              },
+            });
+        } catch (error) {
+          console.error(`❌ Sync error for items:`, error);
+        }
       }
+    } catch (error) {
+      console.log(error);
     }
   }
 
@@ -318,6 +322,7 @@ export async function syncLocalSalesOrders() {
     };
 
     console.log(medRepData[0]?.apiKey, medRepData[0]?.salesOrderAppId);
+    console.log("payload: ", payload);
 
     try {
       const res = await axios(routes.salesCreate, {
