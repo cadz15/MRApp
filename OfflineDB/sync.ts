@@ -1,4 +1,5 @@
 import { routes } from "@/constants/Routes";
+import { getNowDate } from "@/utils/currentDate";
 import axios from "axios";
 import { eq, inArray } from "drizzle-orm";
 import { getDB } from "./db";
@@ -178,7 +179,7 @@ export async function syncItems() {
 export async function syncSalesOrder() {
   const db = await getDB();
 
-  const remoteSalesOrders = await safeAxios(`${routes.salesorder}`);
+  const remoteSalesOrders = await safeAxios(`${routes.salesorder}`, "get");
   if (!remoteSalesOrders) {
     console.log("⚠️ Skipping items sync (API unreachable)");
     return;
@@ -201,7 +202,7 @@ export async function syncSalesOrder() {
           dateSold: salesOrder.date_sold,
           total: salesOrder.total,
           remarks: salesOrder.remarks,
-          syncDate: salesOrder.sync_date,
+          syncDate: salesOrder.sync_date ?? getNowDate(),
           status: salesOrder.status,
           createdAt: salesOrder.created_at,
           updatedAt: salesOrder.updated_at,
@@ -217,7 +218,7 @@ export async function syncSalesOrder() {
             dateSold: salesOrder.date_sold,
             total: salesOrder.total,
             remarks: salesOrder.remarks,
-            syncDate: salesOrder.sync_date,
+            syncDate: salesOrder.sync_date ?? getNowDate(),
             status: salesOrder.status,
             createdAt: salesOrder.created_at,
             updatedAt: salesOrder.updated_at,
@@ -233,7 +234,7 @@ export async function syncSalesOrder() {
               onlineId: salesOrderItem.id,
               salesOrderId: salesOrderItem.sales_order_id,
               salesOrderOfflineId: offlineSaleOrder.lastInsertRowId,
-              itemId: salesOrder.item_id,
+              itemId: salesOrderItem.item_id,
               quantity: salesOrderItem.quantity,
               promo: salesOrderItem.promo,
               discount: salesOrderItem.discount,
@@ -250,7 +251,7 @@ export async function syncSalesOrder() {
               set: {
                 salesOrderId: salesOrderItem.sales_order_id,
                 salesOrderOfflineId: offlineSaleOrder.lastInsertRowId,
-                itemId: salesOrder.item_id,
+                itemId: salesOrderItem.item_id,
                 quantity: salesOrderItem.quantity,
                 promo: salesOrderItem.promo,
                 discount: salesOrderItem.discount,
@@ -309,9 +310,9 @@ export async function syncLocalSalesOrders() {
     itemsByOrder[item.salesOrderId].push(item);
   }
 
-  console.log("Unsynced Orders: ", unsyncedOrders);
-  console.log("orders items: ", items);
-  console.log("Items by Orders: ", itemsByOrder);
+  // console.log("Unsynced Orders: ", unsyncedOrders);
+  // console.log("orders items: ", items);
+  // console.log("Items by Orders: ", itemsByOrder);
 
   // Step 5: Sync each order with its items
   for (const order of unsyncedOrders) {
@@ -320,9 +321,6 @@ export async function syncLocalSalesOrders() {
       ...order,
       items: items.filter((item) => item.salesOrderOfflineId === order.id),
     };
-
-    console.log(medRepData[0]?.apiKey, medRepData[0]?.salesOrderAppId);
-    console.log("payload: ", payload);
 
     try {
       const res = await axios(routes.salesCreate, {
@@ -338,7 +336,6 @@ export async function syncLocalSalesOrders() {
 
       if (res.status === 200) {
         const data = res.data;
-        console.log(res.data);
 
         await db
           .update(salesOrders)

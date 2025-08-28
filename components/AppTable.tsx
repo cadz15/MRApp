@@ -46,7 +46,7 @@ const AppTable = () => {
   async function loadSalesOrder() {
     const latestSalesOrder = await getSalesListTable();
 
-    console.log(latestSalesOrder);
+    // console.log(latestSalesOrder);
 
     setSalesOrders(latestSalesOrder);
   }

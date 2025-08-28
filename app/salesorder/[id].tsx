@@ -4,6 +4,7 @@ import { formattedCurrency } from "@/constants/Currency";
 import { getCustomerFromDB, setSalesOrder } from "@/OfflineDB/dborm";
 import { syncUpData } from "@/OfflineDB/sync";
 import { CustomersTableType } from "@/OfflineDB/tableTypes";
+import { getCurrentDate, getNowDate } from "@/utils/currentDate";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import Feather from "@expo/vector-icons/Feather";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
@@ -151,7 +152,7 @@ const CreateSalesOrder = () => {
           salesOrderNumber: salesId,
           remarks: "",
           total: total?.toString(),
-          dateSold: new Date().toLocaleDateString(),
+          dateSold: getNowDate(),
           status: "pending",
           items: selectedItems,
         });
@@ -253,7 +254,7 @@ const CreateSalesOrder = () => {
       if (customer) {
         setCustomer(customer[0]);
         if (customer[0]?.s3License) {
-          const validatityDate = new Date(customer[0].s3Validity);
+          const validatityDate = getCurrentDate(customer[0].s3Validity);
           const nowDate = new Date();
 
           if (validatityDate >= nowDate) {
