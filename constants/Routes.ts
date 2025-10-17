@@ -5,4 +5,5 @@ export const routes = {
   items: `${process.env.EXPO_PUBLIC_API_LINK}/items`,
   salesorder: `${process.env.EXPO_PUBLIC_API_LINK}/sales-orders`,
   salesCreate: `${process.env.EXPO_PUBLIC_API_LINK}/sales-order`,
+  analytics: `${process.env.EXPO_PUBLIC_API_LINK}/dashboard-analytics`,
 };

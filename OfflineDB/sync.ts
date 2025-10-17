@@ -66,6 +66,23 @@ async function safeFetch(url: string, type = "get") {
   }
 }
 
+export async function getAnalytics() {
+  try {
+    const res = await safeAxios(`${routes.analytics}`);
+
+    if (!res) {
+      console.log("⚠️ Skipping items sync (API unreachable)");
+      return 401;
+    }
+
+    return res;
+  } catch (error) {
+    console.log(error);
+
+    return 500;
+  }
+}
+
 export async function checkMedRep() {
   try {
     const res = await safeAxios(`${routes.salesorder}`);
