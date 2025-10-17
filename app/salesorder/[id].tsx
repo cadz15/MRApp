@@ -1,13 +1,20 @@
 import SalesListModal from "@/components/Modal/SalesListModal";
 import SideModal, { ProductItemType } from "@/components/Modal/SideModal";
 import { formattedCurrency } from "@/constants/Currency";
-import { getCustomerFromDB, setSalesOrder } from "@/OfflineDB/dborm";
-import { syncUpData } from "@/OfflineDB/sync";
+import { useDB } from "@/context/DBProvider";
+import {
+  getCustomerFromDB,
+  setSalesOrder,
+  totalSalesOrder,
+} from "@/OfflineDB/dborm";
+import { items } from "@/OfflineDB/schema";
+import { getMedRepData, syncUpData } from "@/OfflineDB/sync";
 import { CustomersTableType } from "@/OfflineDB/tableTypes";
 import { getCurrentDate, getNowDate } from "@/utils/currentDate";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import Feather from "@expo/vector-icons/Feather";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { inArray } from "drizzle-orm";
 import { Link, router, useLocalSearchParams } from "expo-router";
 import * as ScreenOrientation from "expo-screen-orientation";
 import React, { useEffect, useState } from "react";
@@ -55,10 +62,24 @@ const CreateSalesOrder = () => {
   const [withS3, setWithS3] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const [editProduct, setEditProduct] = useState<ProductItemType | null>(null);
+
+  const db = useDB();
+
+  const { id, ids } = useLocalSearchParams<{ id: string; ids: string }>();
 
   const handleToggleModal = () => {
+    setEditProduct(null);
     setModalVisible(!modalVisible);
+  };
+
+  const handleEditProduct = (productId: number) => {
+    const product = selectedItems.filter(
+      (item) => item.product_id === productId
+    )[0];
+
+    setEditProduct(product);
+    setModalVisible(true);
   };
 
   const handlePreviewModal = () => {
@@ -221,6 +242,13 @@ const CreateSalesOrder = () => {
 
           <TouchableOpacity
             onPress={() => {
+              handleEditProduct(item.product_id);
+            }}
+          >
+            <Feather name="edit-2" size={24} color="#ffb732ff" />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => {
               handleDeleteItem(item.product_id);
             }}
           >
@@ -235,6 +263,31 @@ const CreateSalesOrder = () => {
       </View>
     </View>
   );
+
+  const getProducts = async (ids: string) => {
+    const productsId = ids.split(",").map(Number);
+
+    return await db
+      .select()
+      .from(items)
+      .where(inArray(items.onlineId, productsId));
+  };
+
+  useEffect(() => {
+    getProducts(ids).then((items) => {
+      items.map((item) => {
+        const productData: ProductItemType = {
+          product_id: item.id,
+          product: item,
+          quantity: 1,
+          promo: "regular",
+          total: 1 * parseFloat(item.catalogPrice),
+        };
+
+        handleOnAddItem(productData);
+      });
+    });
+  }, [ids]);
 
   useEffect(() => {
     if (reSort) {
@@ -267,6 +320,16 @@ const CreateSalesOrder = () => {
         <NotFoundScreen />;
       }
     });
+
+    totalSalesOrder().then((total) => {
+      getMedRepData().then((medrep) => {
+        setSalesId(
+          `${medrep[0].onlineId?.toString().padStart(2, "0")}-${(total + 1)
+            .toString()
+            .padStart(4, "0")}`
+        );
+      });
+    });
   }, [id]);
 
   useEffect(() => {
@@ -282,6 +345,7 @@ const CreateSalesOrder = () => {
         onClose={handleToggleModal}
         onAddItem={handleOnAddItem}
         withS3={withS3}
+        editItem={editProduct}
       />
 
       <SalesListModal

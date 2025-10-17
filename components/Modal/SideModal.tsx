@@ -20,6 +20,7 @@ type SideModalType = {
   onClose: () => void;
   onAddItem: (product: ProductItemType) => void;
   withS3: boolean;
+  editItem: ProductItemType;
 };
 
 export type ProductType = {
@@ -49,7 +50,13 @@ export type ProductItemType = {
   total: number;
 };
 
-const SideModal = ({ visible, onClose, onAddItem, withS3 }: SideModalType) => {
+const SideModal = ({
+  visible,
+  onClose,
+  onAddItem,
+  withS3,
+  editItem,
+}: SideModalType) => {
   const [showModal, setShowModal] = useState(visible);
   const [filteredProductData, setFilteredProductData] = useState<
     ItemsTableType[] | null
@@ -154,23 +161,42 @@ const SideModal = ({ visible, onClose, onAddItem, withS3 }: SideModalType) => {
 
   useEffect(() => {
     if (selectedProduct) {
-      setProductItem({
-        product_id: selectedProduct.id,
-        promo: "regular",
-        quantity: 1,
-        product: selectedProduct,
-        total: 0,
-      });
-      try {
-        handleCalculateTotal(1);
-      } catch (error) {
-        console.log("error on handleCalculate(): ", error);
+      console.log(editItem, "with ajshdjka jasdjkas");
+
+      if (editItem) {
+        setProductItem(editItem);
+        try {
+          handleCalculateTotal(editItem.quantity);
+        } catch (error) {
+          console.log("error on handleCalculate(): ", error);
+        }
+      } else {
+        setProductItem({
+          product_id: selectedProduct.id,
+          promo: "regular",
+          quantity: 1,
+          product: selectedProduct,
+          total: 0,
+        });
+        try {
+          handleCalculateTotal(1);
+        } catch (error) {
+          console.log("error on handleCalculate(): ", error);
+        }
       }
     }
   }, [selectedProduct]);
 
   useEffect(() => {
-    setSelectedProduct(undefined);
+    if (visible) {
+      if (editItem) {
+        console.log(editItem, "shit");
+
+        setSelectedProduct(editItem.product);
+      }
+    } else {
+      setSelectedProduct(undefined);
+    }
   }, [visible]);
 
   return (

@@ -168,6 +168,21 @@ export async function setSalesOrder(salesOrder: CreateSalesOrderType) {
   }
 }
 
+export async function getSalesOrder(id: number) {
+  const db = await getDB();
+  const medrep = await getMedRepData();
+
+  try {
+    return await db
+      .select()
+      .from(salesOrdersSchema)
+      .where(eq(salesOrdersSchema.id, id));
+  } catch (error) {
+    console.error(`❌ Failed to fetch :`, error);
+    return null;
+  }
+}
+
 export async function getCustomerFromLocalDB(id: number) {
   const db = await getDB();
 
@@ -198,6 +213,7 @@ export async function getSalesListTable() {
     if (result) {
       const data = result.map((r) => {
         return {
+          orderNumber: r.sales_orders.salesOrderNumber,
           orderId: r.sales_orders.id,
           customerName: r.customers.name,
           dateSold: r.sales_orders.dateSold,
@@ -246,6 +262,15 @@ export async function setCustomer(data: CustomersTableType, onlineId = null) {
   }
 }
 
+export async function totalSalesOrder() {
+  try {
+    const db = await getDB();
+    return (await db.select().from(salesOrdersSchema)).length;
+  } catch (error) {
+    console.error(`❌ Failed to create customer :`, error);
+    return -1;
+  }
+}
 const getDailySalesTotal = async (date: string) => {
   try {
     const db = await getDB();

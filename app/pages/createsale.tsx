@@ -1,7 +1,10 @@
 import SideModal, { ProductItemType } from "@/components/Modal/SideModal";
+import { useDB } from "@/context/DBProvider";
+import { items } from "@/OfflineDB/schema";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import Feather from "@expo/vector-icons/Feather";
-import { Link } from "expo-router";
+import { inArray } from "drizzle-orm";
+import { Link, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   FlatList,
@@ -21,6 +24,10 @@ const createsale = () => {
     []
   );
   const [reSort, setReSort] = useState(false);
+  const [editProduct, seteditProduct] = useState(null);
+  const { ids } = useLocalSearchParams();
+
+  const db = useDB();
 
   const handleToggleModal = () => {
     setModalVisible(!modalVisible);
@@ -100,12 +107,37 @@ const createsale = () => {
     });
   };
 
+  const getProducts = async (ids: string) => {
+    const productsId = ids.split(",").map(Number);
+
+    return await db
+      .select()
+      .from(items)
+      .where(inArray(items.onlineId, productsId));
+  };
+
   useEffect(() => {
     if (reSort) {
       setSelectedItems(handleSortSelectedItems(selectedItems));
       setReSort(false);
     }
   }, [selectedItems]);
+
+  useEffect(() => {
+    getProducts(ids).then((items) => {
+      items.map((item) => {
+        const productData: ProductItemType = {
+          product_id: item.id,
+          product: item,
+          quantity: 1,
+          promo: "regular",
+          total: 1 * parseFloat(item.catalogPrice),
+        };
+
+        handleOnAddItem(productData);
+      });
+    });
+  }, [ids]);
 
   const renderItem = ({ item }: RenderItemType) => (
     <View style={styles.itemContainer}>
@@ -155,6 +187,8 @@ const createsale = () => {
         visible={modalVisible}
         onClose={handleToggleModal}
         onAddItem={handleOnAddItem}
+        withS3
+        editItem={editProduct}
       />
       <View style={styles.container}>
         <View style={styles.leftContainer}>

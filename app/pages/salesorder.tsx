@@ -3,67 +3,19 @@ import { useDB } from "@/context/DBProvider";
 import { customers } from "@/OfflineDB/schema";
 import { Picker } from "@react-native-picker/picker";
 import { and, eq } from "drizzle-orm";
+import * as Linking from "expo-linking";
 import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
-
-const regionsData = ["Region 1", "Region 2", "Region 3"];
-
-const addressesData = [
-  {
-    id: 1,
-    region: "Region 1",
-    address: "sample address",
-  },
-  {
-    id: 2,
-    region: "Region 1",
-    address: "address 2",
-  },
-  {
-    id: 3,
-    region: "Region 2",
-    address: "region2address",
-  },
-  {
-    id: 4,
-    region: "Region 3",
-    address: "regionregion",
-  },
-];
-
-const customersData = [
-  {
-    id: 1,
-    addressId: 1,
-    name: "juan 1 dela cruz",
-  },
-  {
-    id: 1,
-    addressId: 2,
-    name: "juan 2 dela cruz",
-  },
-  {
-    id: 1,
-    addressId: 3,
-    name: "asdas ",
-  },
-  {
-    id: 1,
-    addressId: 3,
-    name: "juan ",
-  },
-  {
-    id: 1,
-    addressId: 4,
-    name: "juan 4 dela cruz",
-  },
-];
 
 const salesorder = () => {
   const [region, setRegion] = useState("");
   const [address, setAddress] = useState("");
   const [customer, setCustomer] = useState("");
+
+  const [dataFromProductApp, setdataFromProductApp] = useState("");
+
+  const url = Linking.useLinkingURL();
 
   const [addressList, setAddressList] = useState<string[]>([]);
   const [customersList, setCustomersList] = useState<
@@ -123,7 +75,7 @@ const salesorder = () => {
 
   const handleCreate = () => {
     if (region && address && customer) {
-      router.push(`/salesorder/${customer}`);
+      router.push(`/salesorder/${customer}?ids=${dataFromProductApp ?? ""}`);
     }
   };
 
@@ -159,8 +111,20 @@ const salesorder = () => {
     }
   }, [address]);
 
+  useEffect(() => {
+    if (url) {
+      const { queryParams } = Linking.parse(url);
+      console.log(queryParams);
+
+      setdataFromProductApp(queryParams?.ids);
+    }
+  }, [url]);
+
   return (
     <View style={styles.container}>
+      {regionList.length <= 0 && (
+        <Text style={{ color: "red" }}>No Data! Please Sync first.</Text>
+      )}
       <View style={styles.cardContainer}>
         <Text style={styles.cardTitle}>Customers</Text>
         <Text style={styles.cardDescription}>Please select a customer.</Text>

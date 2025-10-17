@@ -224,16 +224,17 @@ export async function syncSalesOrder() {
             updatedAt: salesOrder.updated_at,
             deletedAt: salesOrder.deleted_at ?? "",
           },
-        });
+        })
+        .returning();
 
       for (const salesOrderItem of salesOrder.sales_order_items) {
         try {
-          await db
+          const item = await db
             .insert(salesOrderItems)
             .values({
               onlineId: salesOrderItem.id,
               salesOrderId: salesOrderItem.sales_order_id,
-              salesOrderOfflineId: offlineSaleOrder.lastInsertRowId,
+              salesOrderOfflineId: offlineSaleOrder[0]?.id,
               itemId: salesOrderItem.item_id,
               quantity: salesOrderItem.quantity,
               promo: salesOrderItem.promo,
@@ -250,7 +251,7 @@ export async function syncSalesOrder() {
               target: salesOrderItems.onlineId,
               set: {
                 salesOrderId: salesOrderItem.sales_order_id,
-                salesOrderOfflineId: offlineSaleOrder.lastInsertRowId,
+                salesOrderOfflineId: offlineSaleOrder[0]?.id,
                 itemId: salesOrderItem.item_id,
                 quantity: salesOrderItem.quantity,
                 promo: salesOrderItem.promo,
@@ -263,7 +264,12 @@ export async function syncSalesOrder() {
                 updatedAt: salesOrderItem.updated_at,
                 deletedAt: salesOrderItem.deleted_at ?? "",
               },
-            });
+            })
+            .returning();
+
+          console.log(
+            `Sales Order Item: ${item[0]?.id} - Sales Order: ${offlineSaleOrder[0]?.id}`
+          );
         } catch (error) {
           console.error(`❌ Sync error for items:`, error);
         }
