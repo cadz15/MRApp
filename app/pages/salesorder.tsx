@@ -74,8 +74,11 @@ const salesorder = () => {
   };
 
   const handleCreate = () => {
+    console.log(dataFromProductApp);
+
     if (region && address && customer) {
-      router.push(`/salesorder/${customer}?ids=${dataFromProductApp ?? ""}`);
+      // router.push(`/salesorder/${customer}?ids=${dataFromProductApp}`);
+      router.push(`/salesorder/${customer}?ids=3,34,83`);
     }
   };
 

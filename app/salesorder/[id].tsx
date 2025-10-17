@@ -93,7 +93,7 @@ const CreateSalesOrder = () => {
       (item) => item.product_id === productItem.product_id
     );
 
-    if (item) {
+    if (item.length > 0) {
       setSelectedItems((prevState) => [
         ...selectedItems.filter(
           (item) => item.product_id !== productItem.product_id
@@ -101,7 +101,8 @@ const CreateSalesOrder = () => {
         productItem,
       ]);
     } else {
-      setSelectedItems((prevState) => [...selectedItems, productItem]);
+      console.log(`Adding item id: ${productItem.product_id}`, productItem);
+      setSelectedItems((prevState) => [...prevState, productItem]);
     }
     setReSort(true);
   };
@@ -275,7 +276,7 @@ const CreateSalesOrder = () => {
 
   useEffect(() => {
     getProducts(ids).then((items) => {
-      items.map((item) => {
+      items.forEach((item) => {
         const productData: ProductItemType = {
           product_id: item.id,
           product: item,
@@ -284,6 +285,9 @@ const CreateSalesOrder = () => {
           total: 1 * parseFloat(item.catalogPrice),
         };
 
+        // console.log(item);
+
+        // setSelectedItems((prevState) => [...prevState, productData]);
         handleOnAddItem(productData);
       });
     });

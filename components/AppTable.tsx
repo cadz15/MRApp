@@ -138,6 +138,7 @@ const AppTable = () => {
           index !== (salesOrders ? salesOrders.length - 1 : 0)
             ? styles.tableBorderBottom
             : null,
+          { color: "#036810ff" },
         ]}
         onPress={() => {
           handleShowItem(item.orderId);
