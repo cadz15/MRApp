@@ -66,13 +66,27 @@ async function safeFetch(url: string, type = "get") {
   }
 }
 
+export async function checkMedRep() {
+  try {
+    const res = await safeAxios(`${routes.salesorder}`);
+
+    if (!res) {
+      return 401; //if not authenticated
+    }
+
+    return 200; //authenticated
+  } catch (error) {
+    return 500; //server error
+  }
+}
+
 export async function syncCustomers() {
   const db = await getDB();
 
   const remoteCustomers = await safeAxios(`${routes.customers}`);
   if (!remoteCustomers) {
     console.log("⚠️ Skipping customers sync (API unreachable)");
-    return;
+    return "error";
   }
 
   for (const cust of remoteCustomers?.data) {
@@ -121,6 +135,7 @@ export async function syncCustomers() {
         });
     } catch (error) {
       console.error(`❌ Sync error for customer ID ${cust.id}:`, error);
+      return "error";
     }
   }
 

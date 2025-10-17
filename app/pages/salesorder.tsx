@@ -4,7 +4,7 @@ import { customers } from "@/OfflineDB/schema";
 import { Picker } from "@react-native-picker/picker";
 import { and, eq } from "drizzle-orm";
 import * as Linking from "expo-linking";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 
@@ -16,6 +16,8 @@ const salesorder = () => {
   const [dataFromProductApp, setdataFromProductApp] = useState("");
 
   const url = Linking.useLinkingURL();
+
+  const { fromMr } = useLocalSearchParams();
 
   const [addressList, setAddressList] = useState<string[]>([]);
   const [customersList, setCustomersList] = useState<
@@ -115,7 +117,7 @@ const salesorder = () => {
   }, [address]);
 
   useEffect(() => {
-    if (url) {
+    if (url && fromMr !== "1") {
       const { queryParams } = Linking.parse(url);
       console.log(queryParams);
 
