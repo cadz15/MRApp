@@ -82,7 +82,7 @@ export const salesOrders = sqliteTable("sales_orders", {
 // Sales Order Items
 export const salesOrderItems = sqliteTable("sales_order_items", {
   id: integer("id").primaryKey({ autoIncrement: true }),
-  onlineId: integer("online_id").unique(),
+  onlineId: integer("online_id"),
   salesOrderId: integer("sales_order_id"),
   salesOrderOfflineId: integer("sales_order_offline_id"),
   itemId: integer("item_id").notNull(),

@@ -1,0 +1,1 @@
+DROP INDEX `sales_order_items_online_id_unique`;

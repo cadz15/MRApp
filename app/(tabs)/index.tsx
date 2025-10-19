@@ -729,8 +729,8 @@ export default function DashboardScreen() {
             <View style={styles.statsRow}>
               <StatsCard
                 title="Monthly Sales"
-                value={`$${(analytics.monthlySales / 1000).toFixed(0)}k`}
-                subtitle="+12% from last month"
+                value={`₱${(analytics.monthlySales / 1000).toFixed(0)}k`}
+                subtitle=""
                 icon="trending-up"
                 gradient={["#4ade80", "#22c55e"]}
               />

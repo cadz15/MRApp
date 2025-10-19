@@ -167,6 +167,8 @@ const CreateSalesOrder = () => {
   const handleCreateSales = async () => {
     setIsSubmitting(true);
     try {
+      console.log(selectedItems);
+
       if (customer && selectedItems.length >= 1) {
         const success = await setSalesOrder({
           customerId: customer.id ?? 0,

@@ -41,6 +41,7 @@ type RenderItemType = {
 export type ProductItemType = {
   product_id: number;
   product?: ItemsTableType;
+  onlineId?: number;
   quantity: number;
   promo: string;
   discount?: number;

@@ -145,10 +145,13 @@ export async function setSalesOrder(salesOrder: CreateSalesOrderType) {
     const so = await db.insert(salesOrdersSchema).values(salesOrderInsert);
 
     for (const salesOrderItem of salesOrder?.items) {
+      console.info("Insert Sales Item :", salesOrderItem);
+
       const salesItemInsert: salesOrderItemTableType = {
         salesOrderId: 0,
         salesOrderOfflineId: so.lastInsertRowId,
         itemId: salesOrderItem.product_id,
+        onlineId: salesOrderItem.product?.onlineId,
         quantity: salesOrderItem.quantity.toString(),
         promo: salesOrderItem.promo,
         discount: salesOrderItem.discount?.toString() ?? null,
@@ -158,6 +161,9 @@ export async function setSalesOrder(salesOrder: CreateSalesOrderType) {
         total: salesOrderItem.total,
         deletedAt: "",
       };
+
+      console.log("inserted Item:", salesItemInsert);
+
       await db.insert(salesOrderItems).values(salesItemInsert);
     }
 

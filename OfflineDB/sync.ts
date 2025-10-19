@@ -339,6 +339,8 @@ export async function syncLocalSalesOrders() {
     .from(salesOrderItems)
     .where(inArray(salesOrderItems.salesOrderId, orderIds));
 
+  console.info("Items Data:", items);
+
   // Step 4: Group items by orderId
   const itemsByOrder: Record<number, typeof items> = {};
   for (const item of items) {
@@ -359,6 +361,8 @@ export async function syncLocalSalesOrders() {
       ...order,
       items: items.filter((item) => item.salesOrderOfflineId === order.id),
     };
+
+    console.log("sync online:", payload);
 
     try {
       const res = await axios(routes.salesCreate, {
