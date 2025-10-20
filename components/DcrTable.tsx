@@ -1,4 +1,4 @@
-import { getDcrTable } from "@/OfflineDB/dborm";
+import { getDcrTable, getSalesListTable } from "@/OfflineDB/dborm";
 import { dcrTableType } from "@/OfflineDB/tableTypes";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useState } from "react";
@@ -23,18 +23,90 @@ const headers = [
 function DcrTable() {
   const [search, setSearch] = useState("");
   const [deferedText, setDeferedText] = useState("");
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(true);
   const [dcrList, setDcrList] = useState<dcrTableType[] | null>(null);
   const [dcrFilteredList, setDcrFilteredList] = useState<dcrTableType[] | null>(
     null
   );
+  const [salesOrders, setSalesOrders] = useState(null);
 
   const loadDcr = async () => {
     const res = await getDcrTable();
+    const latestSalesOrder = await getSalesListTable();
 
+    setSalesOrders(latestSalesOrder);
     setDcrList(res);
     setDcrFilteredList(res);
   };
+
+  const renderItem2 = ({ item, index }: RenderPropType) => (
+    <View style={styles.tableRow}>
+      <Text
+        style={[
+          styles.tableBodyText,
+          index !== (salesOrders ? salesOrders.length - 1 : 0)
+            ? styles.tableBorderBottom
+            : null,
+          { color: "#036810ff" },
+        ]}
+        onPress={() => {
+          handleShowItem(item.orderId);
+        }}
+      >
+        {item.orderNumber}
+      </Text>
+      <Text
+        style={[
+          styles.tableBodyText,
+          index !== (salesOrders ? salesOrders.length - 1 : 0)
+            ? styles.tableBorderBottom
+            : null,
+        ]}
+      >
+        {item.customerName}
+      </Text>
+      <Text
+        style={[
+          styles.tableBodyText,
+          index !== (salesOrders ? salesOrders.length - 1 : 0)
+            ? styles.tableBorderBottom
+            : null,
+        ]}
+      >
+        {item.dateSold}
+      </Text>
+      <Text
+        style={[
+          styles.tableBodyText,
+          index !== (salesOrders ? salesOrders.length - 1 : 0)
+            ? styles.tableBorderBottom
+            : null,
+        ]}
+      >
+        {item.status}
+      </Text>
+      <Text
+        style={[
+          styles.tableBodyText,
+          index !== (salesOrders ? salesOrders.length - 1 : 0)
+            ? styles.tableBorderBottom
+            : null,
+        ]}
+      >
+        {formattedCurrency(item.total)}
+      </Text>
+      <Text
+        style={[
+          styles.tableBodyText,
+          index !== (salesOrders ? salesOrders.length - 1 : 0)
+            ? styles.tableBorderBottom
+            : null,
+        ]}
+      >
+        {item.dateSynced}
+      </Text>
+    </View>
+  );
 
   const renderItem = ({ item, index }: any) => (
     <View style={styles.tableRow}>
@@ -67,7 +139,7 @@ function DcrTable() {
             : null,
         ]}
       >
-        {item.signature}
+        {item.signature ? "with Signature" : "-"}
       </Text>
       <Text
         style={[
@@ -120,6 +192,8 @@ function DcrTable() {
   }, [search]);
 
   useEffect(() => {
+    console.log(search);
+
     if (deferedText.trim() !== "") {
       const searchItem =
         dcrList?.filter((dcr) => {
@@ -131,7 +205,8 @@ function DcrTable() {
 
       setDcrFilteredList(searchItem);
     } else {
-      setDcrFilteredList(dcrList);
+      loadDcr();
+      //   setDcrFilteredList(dcrList);
     }
   }, [deferedText]);
 
@@ -226,7 +301,6 @@ const styles = StyleSheet.create({
   },
   tableBody: {
     borderWidth: 1,
-    flex: 1,
   },
   tableRow: {
     flexDirection: "row",

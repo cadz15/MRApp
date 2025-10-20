@@ -245,13 +245,14 @@ export async function getDcrTable() {
   const db = await getDB();
 
   try {
-    const result = await db
-      .select()
-      .from(dailyCallRecords)
-      .where(eq(salesOrdersSchema.deletedAt, ""));
+    const result = await db.select().from(dailyCallRecords);
 
     if (result) {
-      return result;
+      const data = result.map((r) => {
+        return r;
+      });
+
+      return data;
     }
 
     return null;
