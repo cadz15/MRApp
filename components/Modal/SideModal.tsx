@@ -93,11 +93,13 @@ const SideModal = ({
     setTotal(total);
 
     if (discount) {
-      setTotal(total - discount);
+      // const totalDiscount = discount;
+      const totalDiscount = (discount / 100) * total; // percent
+      setTotal(total - totalDiscount);
 
       setProductItem((prevState) => ({
         ...prevState,
-        total: total - discount,
+        total: total - totalDiscount,
       }));
     }
   };

@@ -82,10 +82,11 @@ export const salesOrders = sqliteTable("sales_orders", {
 // Sales Order Items
 export const salesOrderItems = sqliteTable("sales_order_items", {
   id: integer("id").primaryKey({ autoIncrement: true }),
-  onlineId: integer("online_id"),
+  onlineId: integer("online_id").unique(),
   salesOrderId: integer("sales_order_id"),
   salesOrderOfflineId: integer("sales_order_offline_id"),
   itemId: integer("item_id").notNull(),
+  itemOnlineId: integer("item_online_id"),
   quantity: text("quantity").notNull(),
   promo: text("promo").notNull(),
   discount: text("discount"),
@@ -93,6 +94,23 @@ export const salesOrderItems = sqliteTable("sales_order_items", {
   freeItemRemarks: text("free_item_remarks"),
   remarks: text("remarks"),
   total: real("total").notNull(),
+  createdAt: text("created_at").default("CURRENT_TIMESTAMP"),
+  updatedAt: text("updated_at").default("CURRENT_TIMESTAMP"),
+  deletedAt: text("deleted_at"),
+});
+
+//DCR
+export const dailyCallRecords = sqliteTable("daily_call_records", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  onlineId: integer("online_id").unique(),
+  customerOnlineId: integer("customer_online_id"),
+  customerId: integer("customer_id"),
+  name: text("name"),
+  practice: text("practice"),
+  signature: text("signature"),
+  remarks: text("remarks"),
+  dcrDate: text("dcr_date"),
+  syncDate: text("sync_date"),
   createdAt: text("created_at").default("CURRENT_TIMESTAMP"),
   updatedAt: text("updated_at").default("CURRENT_TIMESTAMP"),
   deletedAt: text("deleted_at"),

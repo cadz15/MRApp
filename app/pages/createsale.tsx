@@ -64,7 +64,8 @@ const createsale = () => {
 
     let total = item.quantity * parseFloat(price.toString());
 
-    item.total = total - discount;
+    // item.total = total - discount;
+    item.total = total - (discount / 100) * total; // percent
 
     setReSort(true);
     setSelectedItems((prevState) => [
@@ -90,7 +91,8 @@ const createsale = () => {
 
     let total = item.quantity * parseFloat(price.toString());
 
-    item.total = total - discount;
+    // item.total = total - discount;
+    item.total = total - (discount / 100) * total; // percent
 
     setReSort(true);
     setSelectedItems((prevState) => [
@@ -165,11 +167,11 @@ const createsale = () => {
           {item.promo !== "regular" ? (
             item.promo === "free" ? (
               <Text style={styles.itemFreeText}>
-                {item.freeItemQuantity} free Item
+                {item.freeItemQuantity} {item.freeItemRemarks} free Item
               </Text>
             ) : (
               <Text style={styles.itemDiscountText}>
-                {item.discount} Discount
+                {item.discount}% Discount
               </Text>
             )
           ) : null}

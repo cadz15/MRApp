@@ -3,7 +3,7 @@ import { getNowDate } from "@/utils/currentDate";
 import axios from "axios";
 import { eq, inArray } from "drizzle-orm";
 import { getDB } from "./db";
-import { getCustomerFromLocalDB, setCustomer } from "./dborm";
+import { getCustomerFromLocalDB, setCustomer, setDcr } from "./dborm";
 import {
   customers,
   items,
@@ -11,7 +11,7 @@ import {
   salesOrderItems,
   salesOrders,
 } from "./schema";
-import { CustomersTableType } from "./tableTypes";
+import { CustomersTableType, dcrTableType } from "./tableTypes";
 
 const API_BASE = process.env.EXPO_PUBLIC_API_LINK;
 
@@ -261,13 +261,21 @@ export async function syncSalesOrder() {
 
       for (const salesOrderItem of salesOrder.sales_order_items) {
         try {
+          //get local product item
+          const productItem = await db
+            .select()
+            .from(items)
+            .where(eq(items.onlineId, salesOrderItem.item_id));
+
+          //insert sales order item
           const item = await db
             .insert(salesOrderItems)
             .values({
               onlineId: salesOrderItem.id,
               salesOrderId: salesOrderItem.sales_order_id,
               salesOrderOfflineId: offlineSaleOrder[0]?.id,
-              itemId: salesOrderItem.item_id,
+              itemId: productItem[0]?.id,
+              itemOnlineId: salesOrderItem.item_id,
               quantity: salesOrderItem.quantity,
               promo: salesOrderItem.promo,
               discount: salesOrderItem.discount,
@@ -284,7 +292,8 @@ export async function syncSalesOrder() {
               set: {
                 salesOrderId: salesOrderItem.sales_order_id,
                 salesOrderOfflineId: offlineSaleOrder[0]?.id,
-                itemId: salesOrderItem.item_id,
+                itemId: productItem[0]?.id,
+                itemOnlineId: salesOrderItem.item_id,
                 quantity: salesOrderItem.quantity,
                 promo: salesOrderItem.promo,
                 discount: salesOrderItem.discount,
@@ -508,6 +517,38 @@ export async function uploadCustomer(data: CustomersTableType) {
   } catch (error) {
     console.error(`❌ Sync error`, error);
     await setCustomer(data);
+  }
+
+  return false;
+}
+
+export async function uploadDcr(data: dcrTableType) {
+  try {
+    const medRepData = await getMedRepData();
+
+    const result = axios(routes.dcrCreate, {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        "X-API-KEY": `${medRepData[0]?.apiKey}`,
+        "X-API-APP-KEY": `${medRepData[0]?.salesOrderAppId}`,
+      },
+      data: JSON.stringify(data),
+    });
+
+    if ((await result).status === 200) {
+      const id = (await result).data.id;
+      const localCustomer = await setDcr(data, id);
+
+      return localCustomer;
+    } else {
+      await setDcr(data);
+      return false;
+    }
+  } catch (error) {
+    console.error(`❌ Sync error`, error.response.data);
+    await setDcr(data);
   }
 
   return false;

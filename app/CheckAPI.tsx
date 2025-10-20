@@ -113,6 +113,14 @@ const CheckAPI = () => {
               }}
             />
             <Stack.Screen
+              name="pages/createDcr"
+              options={{
+                headerShown: false,
+                headerTitleStyle: { fontFamily: "mon-sb" },
+                animation: "slide_from_right",
+              }}
+            />
+            <Stack.Screen
               name="pages/createsale"
               options={{
                 headerShown: false,
@@ -122,6 +130,14 @@ const CheckAPI = () => {
             />
             <Stack.Screen
               name="salesorder/[id]"
+              options={{
+                headerShown: false,
+                headerTitleStyle: { fontFamily: "mon-sb" },
+                animation: "slide_from_right",
+              }}
+            />
+            <Stack.Screen
+              name="dcr/[id]"
               options={{
                 headerShown: false,
                 headerTitleStyle: { fontFamily: "mon-sb" },

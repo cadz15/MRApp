@@ -69,6 +69,7 @@ export type salesOrderItemTableType = {
   salesOrderId: number | null;
   salesOrderOfflineId: number | null;
   itemId: number;
+  itemOnlineId?: number | null;
   quantity: string;
   promo: string;
   discount: string | null;
@@ -76,6 +77,22 @@ export type salesOrderItemTableType = {
   freeItemRemarks: string | null;
   remarks: string | null;
   total: number;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+  deletedAt?: string | null;
+};
+
+export type dcrTableType = {
+  id: number;
+  onlineId: number | null;
+  customerOnlineId?: number | null;
+  customerId: number | null;
+  name: string | null;
+  practice: string | null;
+  signature: string | null;
+  remarks: string | null;
+  dcrDate: string | null;
+  syncDate: string | null;
   createdAt?: string | null;
   updatedAt?: string | null;
   deletedAt?: string | null;

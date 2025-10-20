@@ -72,6 +72,12 @@ const AppTable = () => {
   const [modalSalesPreviewVisible, setModalSalesPreviewVisible] =
     useState(false);
 
+  const [search, setSearch] = useState("");
+  const [deferedText, setDeferedText] = useState("");
+  const [salesOrderList, setSalesOrderList] = useState<
+    TableResultType[] | null
+  >(null);
+
   const db = useDB();
 
   const handlePreviewModal = () => {
@@ -84,6 +90,7 @@ const AppTable = () => {
     // console.log(latestSalesOrder);
 
     setSalesOrders(latestSalesOrder);
+    setSalesOrderList(latestSalesOrder);
   }
 
   const handleShowItem = async (id: number) => {
@@ -206,6 +213,40 @@ const AppTable = () => {
     }
   }, [isRefreshing]);
 
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDeferedText(search);
+    }, 500); // wait 500ms after user stops typing
+
+    return () => {
+      clearTimeout(handler); // clear on every new keystroke
+    };
+  }, [search]);
+
+  useEffect(() => {
+    if (deferedText.trim() !== "") {
+      const searchItem =
+        salesOrderList?.filter((salesorder) => {
+          return (
+            salesorder.customerName
+              .toLowerCase()
+              .includes(deferedText.toLowerCase()) ||
+            salesorder.orderNumber
+              .toLowerCase()
+              .includes(deferedText.toLowerCase()) ||
+            salesorder.dateSold
+              .toLowerCase()
+              .includes(deferedText.toLowerCase()) ||
+            salesorder.status.toLowerCase().includes(deferedText.toLowerCase())
+          );
+        }) ?? null;
+
+      setSalesOrders(searchItem);
+    } else {
+      setSalesOrders(salesOrderList);
+    }
+  }, [deferedText]);
+
   return (
     <>
       <SalesListModal
@@ -222,6 +263,8 @@ const AppTable = () => {
             <TextInput
               style={styles.searchTextBar}
               placeholder="Search by customer, date or total sold "
+              value={search}
+              onChangeText={setSearch}
             />
           </View>
         </View>

@@ -5,6 +5,7 @@ import { and, desc, eq, notLike } from "drizzle-orm";
 import { getDB } from "./db";
 import {
   customers,
+  dailyCallRecords,
   items,
   medrep as MedRepSchema,
   salesOrderItems,
@@ -13,6 +14,7 @@ import {
 import { getMedRepData } from "./sync";
 import {
   CustomersTableType,
+  dcrTableType,
   salesOrderItemTableType,
   salesOrderTableType,
 } from "./tableTypes";
@@ -151,7 +153,7 @@ export async function setSalesOrder(salesOrder: CreateSalesOrderType) {
         salesOrderId: 0,
         salesOrderOfflineId: so.lastInsertRowId,
         itemId: salesOrderItem.product_id,
-        onlineId: salesOrderItem.product?.onlineId,
+        itemOnlineId: salesOrderItem.product?.onlineId,
         quantity: salesOrderItem.quantity.toString(),
         promo: salesOrderItem.promo,
         discount: salesOrderItem.discount?.toString() ?? null,
@@ -214,7 +216,7 @@ export async function getSalesListTable() {
       .from(salesOrdersSchema)
       .where(eq(salesOrdersSchema.deletedAt, ""))
       .innerJoin(customers, eq(salesOrdersSchema.customerId, customers.id))
-      .orderBy(desc(salesOrdersSchema.dateSold));
+      .orderBy(desc(salesOrdersSchema.salesOrderNumber));
 
     if (result) {
       const data = result.map((r) => {
@@ -230,6 +232,26 @@ export async function getSalesListTable() {
       });
 
       return data;
+    }
+
+    return null;
+  } catch (err) {
+    console.error(`❌ Failed to fetch :`, err);
+    return null;
+  }
+}
+
+export async function getDcrTable() {
+  const db = await getDB();
+
+  try {
+    const result = await db
+      .select()
+      .from(dailyCallRecords)
+      .where(eq(salesOrdersSchema.deletedAt, ""));
+
+    if (result) {
+      return result;
     }
 
     return null;
@@ -259,6 +281,29 @@ export async function setCustomer(data: CustomersTableType, onlineId = null) {
       s3Validity: data.s3Validity,
       syncDate: onlineId ? new Date().toLocaleDateString() : null,
       deletedAt: "",
+    });
+
+    return true;
+  } catch (err) {
+    console.error(`❌ Failed to create customer :`, err);
+    return false;
+  }
+}
+
+export async function setDcr(data: dcrTableType, onlineId = null) {
+  try {
+    const db = await getDB();
+
+    await db.insert(dailyCallRecords).values({
+      name: data.name,
+      dcrDate: data.dcrDate,
+      practice: data.practice,
+      remarks: data.remarks,
+      signature: data.signature,
+      onlineId: onlineId,
+      customerId: data.customerId,
+      customerOnlineId: data.customerOnlineId,
+      syncDate: onlineId ? new Date().toLocaleDateString() : null,
     });
 
     return true;
