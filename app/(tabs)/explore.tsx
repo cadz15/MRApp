@@ -7,7 +7,7 @@ import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
 import { and, count, desc, eq, like, sum } from "drizzle-orm";
 import { Link } from "expo-router";
 import { useEffect, useState } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 
 interface AnalyticsData {
   monthlySales: number;
@@ -159,7 +159,7 @@ export default function TabTwoScreen() {
           <Text style={styles.buttonNavText}>Customer Analytics</Text>
         </Link>
       </View>
-      <ScrollView style={styles.main}>
+      <View style={styles.main}>
         <Text style={styles.mainHeaderText}>Sale Orders</Text>
         <View style={styles.mainCardContainer}>
           <View style={[styles.mainCard, styles.salesCard]}>
@@ -210,7 +210,7 @@ export default function TabTwoScreen() {
         </AppButton>
 
         <AppTable />
-      </ScrollView>
+      </View>
     </View>
   );
 }

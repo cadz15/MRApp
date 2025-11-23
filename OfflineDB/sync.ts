@@ -235,7 +235,10 @@ export async function syncSalesOrder() {
           dateSold: salesOrder.date_sold,
           total: salesOrder.total,
           remarks: salesOrder.remarks,
-          syncDate: salesOrder.sync_date ?? getNowDate(),
+          syncDate:
+            salesOrder.sync_date && salesOrder.syncDate !== ""
+              ? salesOrder.sync_date
+              : getNowDate(),
           status: salesOrder.status,
           createdAt: salesOrder.created_at,
           updatedAt: salesOrder.updated_at,
@@ -394,6 +397,8 @@ export async function syncLocalSalesOrders() {
     .from(salesOrders)
     .where(eq(salesOrders.syncDate, ""));
 
+  // console.log("unsynced orders: ", unsyncedOrders);
+
   if (unsyncedOrders.length === 0) {
     console.log("✅ No local sales orders to sync");
     return;
@@ -408,15 +413,15 @@ export async function syncLocalSalesOrders() {
     .from(salesOrderItems)
     .where(inArray(salesOrderItems.salesOrderId, orderIds));
 
-  console.info("Items Data:", items);
+  // console.info("Items Data:", items);
 
   // Step 4: Group items by orderId
   const itemsByOrder: Record<number, typeof items> = {};
   for (const item of items) {
-    if (!itemsByOrder[item.salesOrderId]) {
-      itemsByOrder[item.salesOrderId] = [];
+    if (!itemsByOrder[item.salesOrderOfflineId]) {
+      itemsByOrder[item.salesOrderOfflineId] = [];
     }
-    itemsByOrder[item.salesOrderId].push(item);
+    itemsByOrder[item.salesOrderOfflineId].push(item);
   }
 
   // console.log("Unsynced Orders: ", unsyncedOrders);
@@ -425,16 +430,17 @@ export async function syncLocalSalesOrders() {
 
   // Step 5: Sync each order with its items
   for (const order of unsyncedOrders) {
-    const items = itemsByOrder[order.onlineId];
+    const items = itemsByOrder[order.id];
 
-    console.log(`Items By Order [${order.id}]`, order);
+    // console.log(`Order`, order);
+    // console.log(`Items By Order [${order.id}]`, itemsByOrder);
 
     const payload = {
       ...order,
       items: items.filter((item) => item.salesOrderOfflineId === order.id),
     };
 
-    console.log("sync online:", payload);
+    // console.log("sync online:", payload);
 
     try {
       const res = await axios(routes.salesCreate, {

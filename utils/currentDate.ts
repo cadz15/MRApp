@@ -13,3 +13,11 @@ export function getCurrentDate(dateString: string) {
     return new Date(1990, 1, 1);
   }
 }
+
+export function getNowDateFormatted() {
+  return new Date().toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}

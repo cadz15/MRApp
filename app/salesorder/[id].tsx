@@ -10,7 +10,7 @@ import {
 import { items } from "@/OfflineDB/schema";
 import { getMedRepData, syncUpData } from "@/OfflineDB/sync";
 import { CustomersTableType } from "@/OfflineDB/tableTypes";
-import { getCurrentDate, getNowDate } from "@/utils/currentDate";
+import { getCurrentDate, getNowDateFormatted } from "@/utils/currentDate";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import Feather from "@expo/vector-icons/Feather";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
@@ -176,7 +176,7 @@ const CreateSalesOrder = () => {
           salesOrderNumber: salesId,
           remarks: "",
           total: total?.toString(),
-          dateSold: getNowDate(),
+          dateSold: getNowDateFormatted(),
           status: "pending",
           items: selectedItems,
         });

@@ -303,11 +303,11 @@ const AppTable = () => {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
     backgroundColor: "#fff",
     padding: 15,
     borderRadius: 5,
     marginBottom: 50,
+    height: 300,
   },
   searchContainer: {
     backgroundColor: "#ecececff",
@@ -347,7 +347,7 @@ const styles = StyleSheet.create({
   },
   tableBody: {
     borderWidth: 1,
-    flex: 1,
+    height: 180,
   },
   tableRow: {
     flexDirection: "row",
