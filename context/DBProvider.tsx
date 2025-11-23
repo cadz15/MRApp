@@ -1,5 +1,4 @@
 import { getDB } from "@/OfflineDB/db";
-import { syncDownData } from "@/OfflineDB/sync";
 import { isOnline } from "@/utils/checkInternet";
 import React, { createContext, useContext, useEffect, useState } from "react";
 
@@ -24,7 +23,7 @@ export const DBProvider = ({ children }: { children: React.ReactNode }) => {
       const online = await isOnline();
 
       if (online) {
-        await syncDownData();
+        // await syncDownData();
       }
     })();
   }, []);

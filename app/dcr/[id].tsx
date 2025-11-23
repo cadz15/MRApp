@@ -83,7 +83,9 @@ const createDailyCall = () => {
           { text: "OK", onPress: () => router.back() },
         ]);
       } else {
-        Alert.alert("Error", "Unable to save DCR online.");
+        Alert.alert("Error", "Unable to save DCR online.", [
+          { text: "OK", onPress: () => router.back() },
+        ]);
       }
     } catch (error) {
       console.error("DCR creation error:", error);
@@ -103,6 +105,7 @@ const createDailyCall = () => {
           ...prev,
           name: res.name || "",
           customerOnlineId: res.onlineId || null,
+          practice: res.practice || "",
         }));
       }
     };

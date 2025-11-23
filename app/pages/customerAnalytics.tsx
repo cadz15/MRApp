@@ -14,7 +14,7 @@ import {
   View,
 } from "react-native";
 
-const createDcr = () => {
+const customerAnalytics = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCustomer, setSelectedCustomer] = useState<number | null>(null);
   const [dataFromProductApp, setdataFromProductApp] = useState("");
@@ -41,7 +41,7 @@ const createDcr = () => {
     try {
       const result = await db
         .select({
-          id: customers.id,
+          id: customers.onlineId,
           name: customers.name,
           shortAddress: customers.shortAddress,
         })
@@ -71,7 +71,7 @@ const createDcr = () => {
   };
   const handleCreate = () => {
     if (selectedCustomer) {
-      router.push(`../dcr/${selectedCustomer}`);
+      router.push(`../customeranalytics/${selectedCustomer}`);
     }
   };
 
@@ -165,7 +165,7 @@ const createDcr = () => {
           disabled={!selectedCustomer}
         >
           <Text style={styles.buttonText}>
-            {selectedCustomer ? "Continue to DCR" : "Select a Customer"}
+            {selectedCustomer ? "Continue to Analytics" : "Select a Customer"}
           </Text>
         </AppButton>
       </View>
@@ -322,4 +322,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default createDcr;
+export default customerAnalytics;

@@ -111,7 +111,7 @@ const AppTable = () => {
 
     setSelectedCustomer(
       await getCustomerFromLocalDB(
-        salesOrderData ? salesOrderData[0].customerId ?? 0 : 0
+        salesOrderData ? salesOrderData[0].customerOnlineId ?? 0 : 0
       )
     );
 

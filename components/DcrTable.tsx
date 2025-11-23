@@ -1,6 +1,7 @@
-import { getDcrTable, getSalesListTable } from "@/OfflineDB/dborm";
+import { getDcrTable } from "@/OfflineDB/dborm";
 import { dcrTableType } from "@/OfflineDB/tableTypes";
 import { Ionicons } from "@expo/vector-icons";
+import { useNavigation } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   FlatList,
@@ -30,83 +31,15 @@ function DcrTable() {
   );
   const [salesOrders, setSalesOrders] = useState(null);
 
+  const navigation = useNavigation();
+  const focused = navigation.isFocused();
+
   const loadDcr = async () => {
     const res = await getDcrTable();
-    const latestSalesOrder = await getSalesListTable();
 
-    setSalesOrders(latestSalesOrder);
     setDcrList(res);
     setDcrFilteredList(res);
   };
-
-  const renderItem2 = ({ item, index }: RenderPropType) => (
-    <View style={styles.tableRow}>
-      <Text
-        style={[
-          styles.tableBodyText,
-          index !== (salesOrders ? salesOrders.length - 1 : 0)
-            ? styles.tableBorderBottom
-            : null,
-          { color: "#036810ff" },
-        ]}
-        onPress={() => {
-          handleShowItem(item.orderId);
-        }}
-      >
-        {item.orderNumber}
-      </Text>
-      <Text
-        style={[
-          styles.tableBodyText,
-          index !== (salesOrders ? salesOrders.length - 1 : 0)
-            ? styles.tableBorderBottom
-            : null,
-        ]}
-      >
-        {item.customerName}
-      </Text>
-      <Text
-        style={[
-          styles.tableBodyText,
-          index !== (salesOrders ? salesOrders.length - 1 : 0)
-            ? styles.tableBorderBottom
-            : null,
-        ]}
-      >
-        {item.dateSold}
-      </Text>
-      <Text
-        style={[
-          styles.tableBodyText,
-          index !== (salesOrders ? salesOrders.length - 1 : 0)
-            ? styles.tableBorderBottom
-            : null,
-        ]}
-      >
-        {item.status}
-      </Text>
-      <Text
-        style={[
-          styles.tableBodyText,
-          index !== (salesOrders ? salesOrders.length - 1 : 0)
-            ? styles.tableBorderBottom
-            : null,
-        ]}
-      >
-        {formattedCurrency(item.total)}
-      </Text>
-      <Text
-        style={[
-          styles.tableBodyText,
-          index !== (salesOrders ? salesOrders.length - 1 : 0)
-            ? styles.tableBorderBottom
-            : null,
-        ]}
-      >
-        {item.dateSynced}
-      </Text>
-    </View>
-  );
 
   const renderItem = ({ item, index }: any) => (
     <View style={styles.tableRow}>
@@ -169,7 +102,7 @@ function DcrTable() {
             : null,
         ]}
       >
-        {item.dateSynced}
+        {item.syncDate}
       </Text>
     </View>
   );
@@ -179,7 +112,7 @@ function DcrTable() {
       loadDcr();
       setIsRefreshing(false);
     }
-  }, [isRefreshing]);
+  }, [isRefreshing, focused]);
 
   useEffect(() => {
     const handler = setTimeout(() => {

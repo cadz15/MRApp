@@ -4,6 +4,7 @@ import {
   syncCustomers,
   syncItems,
   syncLocalCustomers,
+  syncLocalDcrs,
   syncLocalSalesOrders,
   syncSalesOrder,
 } from "@/OfflineDB/sync";
@@ -79,23 +80,33 @@ export default function settings() {
       }
 
       setCurrentStep("Syncing customers...");
+      console.log("Syncing customers...");
+
       setSyncingValue(30);
       await syncCustomers();
 
       setCurrentStep("Syncing items...");
+      console.log("Syncing items...");
       setSyncingValue(60);
       await syncItems();
 
       setCurrentStep("Syncing sales orders...");
+      console.log("Syncing sales orders...");
       setSyncingValue(80);
       await syncSalesOrder();
 
       setCurrentStep("Syncing local data...");
+      console.log("Syncing local customer...");
       setSyncingValue(90);
       await syncLocalCustomers();
 
-      setSyncingValue(98);
+      console.log("Syncing local sales order...");
+      setSyncingValue(94);
       await syncLocalSalesOrders();
+
+      console.log("Syncing local dcr...");
+      setSyncingValue(96);
+      await syncLocalDcrs();
 
       setCurrentStep("Finalizing...");
       setSyncingValue(100);

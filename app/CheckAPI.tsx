@@ -152,6 +152,33 @@ const CheckAPI = () => {
                 animation: "slide_from_right",
               }}
             />
+            <Stack.Screen
+              name="pages/medRepAnalytics"
+              options={{
+                title: "Medical Representative - Analytics",
+                headerShown: true,
+                headerTitleStyle: { fontFamily: "mon-sb" },
+                animation: "slide_from_right",
+              }}
+            />
+            <Stack.Screen
+              name="pages/customerAnalytics"
+              options={{
+                title: "Customer - Analytics",
+                headerShown: false,
+                headerTitleStyle: { fontFamily: "mon-sb" },
+                animation: "slide_from_right",
+              }}
+            />
+            <Stack.Screen
+              name="customeranalytics/[id]"
+              options={{
+                title: "Customer - Analytics",
+                headerShown: false,
+                headerTitleStyle: { fontFamily: "mon-sb" },
+                animation: "slide_from_right",
+              }}
+            />
             <Stack.Screen name="+not-found" />
           </Stack>
         )

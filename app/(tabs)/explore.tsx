@@ -1,16 +1,145 @@
 import AppButton from "@/components/AppButton";
 import AppTable from "@/components/AppTable";
+import { getDB } from "@/OfflineDB/db";
+import { items, salesOrderItems, salesOrders } from "@/OfflineDB/schema";
+import { getMedRepData } from "@/OfflineDB/sync";
 import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
+import { and, count, desc, eq, like, sum } from "drizzle-orm";
 import { Link } from "expo-router";
-import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { useEffect, useState } from "react";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
+
+interface AnalyticsData {
+  monthlySales: number;
+  monthlySalesMonth: string;
+  monthlyConversions: number;
+  popularProductType: string;
+}
 
 export default function TabTwoScreen() {
+  const [analytics, setAnalytics] = useState<AnalyticsData>({
+    monthlySales: 0,
+    monthlySalesMonth: "",
+    monthlyConversions: 0,
+    popularProductType: "-",
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadAnalyticsData();
+  }, []);
+
+  const loadAnalyticsData = async () => {
+    try {
+      const db = await getDB();
+      const medrep = await getMedRepData();
+
+      if (!medrep || medrep.length === 0) {
+        console.warn("No medical representative data found");
+        return;
+      }
+
+      const currentDate = new Date();
+      const currentYear = currentDate.getFullYear();
+      const currentMonth = currentDate.toLocaleString("en-US", {
+        month: "short",
+      });
+      const monthNames = [
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec",
+      ];
+      const fullMonthNames = [
+        "January",
+        "February",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December",
+      ];
+
+      // Get monthly sales for current month (using "Oct 2025" format)
+      const monthlySalesResult = await db
+        .select({ total: sum(salesOrders.total) })
+        .from(salesOrders)
+        .where(
+          and(
+            eq(salesOrders.medicalRepresentativeId, medrep[0].id),
+            like(salesOrders.dateSold, `${currentMonth}%${currentYear}`)
+          )
+        );
+
+      const monthlySales = parseFloat(monthlySalesResult[0]?.total || "0");
+
+      // Get monthly conversions (unique customers for current month)
+      const monthlyConversionsResult = await db.select({ count: count() }).from(
+        db
+          .select()
+          .from(salesOrders)
+          .where(
+            and(
+              eq(salesOrders.medicalRepresentativeId, medrep[0].id),
+              like(salesOrders.dateSold, `${currentMonth}%${currentYear}`)
+            )
+          )
+          .groupBy(salesOrders.customerId)
+          .as("distinct_customers")
+      );
+
+      const monthlyConversions = monthlyConversionsResult[0]?.count || 0;
+
+      // Get popular product type (all time)
+      const popularProductTypeResult = await db
+        .select({
+          product_type: items.productType,
+          total_quantity: sum(salesOrderItems.quantity),
+        })
+        .from(salesOrderItems)
+        .innerJoin(
+          salesOrders,
+          eq(salesOrderItems.salesOrderOfflineId, salesOrders.id)
+        )
+        .innerJoin(items, eq(salesOrderItems.itemId, items.id))
+        .where(eq(salesOrders.medicalRepresentativeId, medrep[0].id))
+        .groupBy(items.productType)
+        .orderBy(desc(sum(salesOrderItems.quantity)))
+        .limit(1);
+
+      const popularProductType =
+        popularProductTypeResult[0]?.product_type || "-";
+
+      // Get current month index for full month name
+      const currentMonthIndex = currentDate.getMonth();
+      const currentFullMonthName = fullMonthNames[currentMonthIndex];
+
+      setAnalytics({
+        monthlySales,
+        monthlySalesMonth: currentFullMonthName,
+        monthlyConversions,
+        popularProductType,
+      });
+    } catch (error) {
+      console.error("Error loading analytics data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.sidebar}>
@@ -20,30 +149,35 @@ export default function TabTwoScreen() {
         >
           <Text style={styles.buttonNavText}>Create Customer</Text>
         </Link>
-        {/* <TouchableOpacity style={[styles.buttonNav, styles.borderBottom]}>
-          <Text style={styles.buttonNavText}>Sales List</Text>
-        </TouchableOpacity> */}
-        <TouchableOpacity style={[styles.buttonNav, styles.borderBottom]}>
+        <Link
+          href={"/pages/medRepAnalytics"}
+          style={[styles.buttonNav, styles.borderBottom]}
+        >
           <Text style={styles.buttonNavText}>Report</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.buttonNav}>
-          <Text style={styles.buttonNavText}>S.O. Notifications</Text>
-        </TouchableOpacity>
+        </Link>
+        <Link href={"/pages/customerAnalytics"} style={styles.buttonNav}>
+          <Text style={styles.buttonNavText}>Customer Analytics</Text>
+        </Link>
       </View>
       <ScrollView style={styles.main}>
         <Text style={styles.mainHeaderText}>Sale Orders</Text>
         <View style={styles.mainCardContainer}>
           <View style={[styles.mainCard, styles.salesCard]}>
-            <Text style={[styles.salesCardText]}>Daily Sales</Text>
+            <Text style={[styles.salesCardText]}>Monthly Sales</Text>
             <Text style={[styles.salesCardText, styles.cardNumberText]}>
-              ₱ 0
+              ₱ {loading ? "..." : analytics.monthlySales.toLocaleString()}
+            </Text>
+            <Text
+              style={[styles.conversionCardText, styles.cardNumberDescription]}
+            >
+              {loading ? "Loading..." : analytics.monthlySalesMonth}
             </Text>
           </View>
           <View style={[styles.mainCard, styles.conversionCard]}>
-            <Text style={[styles.conversionCardText]}>Daily Conversions</Text>
+            <Text style={[styles.conversionCardText]}>Monthly Conversions</Text>
             <View>
               <Text style={[styles.conversionCardText, styles.cardNumberText]}>
-                0
+                {loading ? "..." : analytics.monthlyConversions}
               </Text>
               <Text
                 style={[
@@ -58,7 +192,7 @@ export default function TabTwoScreen() {
           <View style={[styles.mainCard, styles.popularCard]}>
             <Text style={[styles.popularCardText]}>Popular Product Type</Text>
             <Text style={[styles.popularCardText, styles.cardNumberText]}>
-              -
+              {loading ? "..." : analytics.popularProductType}
             </Text>
           </View>
         </View>

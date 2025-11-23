@@ -7,4 +7,6 @@ export const routes = {
   salesCreate: `${process.env.EXPO_PUBLIC_API_LINK}/sales-order`,
   analytics: `${process.env.EXPO_PUBLIC_API_LINK}/dashboard-analytics`,
   dcrCreate: `${process.env.EXPO_PUBLIC_API_LINK}/dcr`,
+  dcrData: `${process.env.EXPO_PUBLIC_API_LINK}/dcr-data`,
+  customerAnalytics: `${process.env.EXPO_PUBLIC_API_LINK}/customer/anayltics/{id}`,
 };

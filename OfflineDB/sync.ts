@@ -6,6 +6,7 @@ import { getDB } from "./db";
 import { getCustomerFromLocalDB, setCustomer, setDcr } from "./dborm";
 import {
   customers,
+  dailyCallRecords,
   items,
   medrep,
   salesOrderItems,
@@ -228,7 +229,7 @@ export async function syncSalesOrder() {
         .values({
           onlineId: salesOrder.id,
           customerId: selectedCustomerData?.id ?? null,
-          customerOnlineId: salesOrder.customer_id,
+          customerOnlineId: salesOrder.customer?.id,
           medicalRepresentativeId: salesOrder.medical_representative.id,
           salesOrderNumber: salesOrder.sales_order_number,
           dateSold: salesOrder.date_sold,
@@ -244,7 +245,7 @@ export async function syncSalesOrder() {
           target: salesOrders.onlineId,
           set: {
             customerId: selectedCustomerData?.id ?? null,
-            customerOnlineId: salesOrder.customer_id,
+            customerOnlineId: salesOrder.customer?.id,
             medicalRepresentativeId: salesOrder.medical_representative_id,
             salesOrderNumber: salesOrder.sales_order_number,
             dateSold: salesOrder.date_sold,
@@ -323,6 +324,65 @@ export async function syncSalesOrder() {
   console.log(`✅ Synced ${remoteSalesOrders?.data.length} sales orders`);
 }
 
+export async function syncDcr() {
+  const db = await getDB();
+
+  const remoteDcrData = await safeAxios(`${routes.dcrData}`, "get");
+  if (!remoteDcrData) {
+    console.log("⚠️ Skipping items sync (API unreachable)");
+    return;
+  }
+
+  for (const dcrData of remoteDcrData?.data) {
+    const selectedCustomerData = await getCustomerFromLocalDB(
+      dcrData.customer_id
+    );
+
+    try {
+      await db
+        .insert(dailyCallRecords)
+        .values({
+          onlineId: dcrData.id,
+          customerId: selectedCustomerData?.id ?? null,
+          customerOnlineId: dcrData.customer_id,
+          name: selectedCustomerData?.name ?? "",
+          practice:
+            selectedCustomerData?.practice ?? selectedCustomerData?.fullAddress,
+          signature: dcrData.signature,
+          remarks: dcrData.remarks,
+          dcrDate: dcrData.dcr_date,
+          syncDate: dcrData.sync_date ?? getNowDate(),
+          createdAt: dcrData.created_at,
+          updatedAt: dcrData.updated_at,
+          deletedAt: dcrData.deleted_at ?? "",
+        })
+        .onConflictDoUpdate({
+          target: dailyCallRecords.onlineId,
+          set: {
+            customerId: selectedCustomerData?.id ?? null,
+            customerOnlineId: dcrData.customer_id,
+            name: selectedCustomerData?.name ?? "",
+            practice:
+              selectedCustomerData?.practice ??
+              selectedCustomerData?.fullAddress,
+            signature: dcrData.signature,
+            remarks: dcrData.remarks,
+            dcrDate: dcrData.dcr_date,
+            syncDate: dcrData.sync_date ?? getNowDate(),
+            createdAt: dcrData.created_at,
+            updatedAt: dcrData.updated_at,
+            deletedAt: dcrData.deleted_at ?? "",
+          },
+        })
+        .returning();
+    } catch (error) {
+      console.error(`❌ Sync error for dcr:`, error);
+    }
+  }
+
+  console.log(`✅ Synced ${remoteDcrData?.data.length} dcr data`);
+}
+
 export async function syncLocalSalesOrders() {
   const db = await getDB();
   const nowDate = new Date().toLocaleDateString();
@@ -365,7 +425,10 @@ export async function syncLocalSalesOrders() {
 
   // Step 5: Sync each order with its items
   for (const order of unsyncedOrders) {
-    const items = itemsByOrder[0];
+    const items = itemsByOrder[order.onlineId];
+
+    console.log(`Items By Order [${order.id}]`, order);
+
     const payload = {
       ...order,
       items: items.filter((item) => item.salesOrderOfflineId === order.id),
@@ -490,6 +553,67 @@ export async function syncLocalCustomers() {
   }
 }
 
+export async function syncLocalDcrs() {
+  const db = await getDB();
+  const nowDate = new Date().toLocaleDateString();
+  const medRepData = await getMedRepData();
+
+  // 1. Get unsynced customers
+  const unsyncedDcr = await db
+    .select()
+    .from(dailyCallRecords)
+    .where(eq(dailyCallRecords.syncDate, ""));
+
+  if (unsyncedDcr.length === 0) {
+    console.log("✅ No local dcrs to sync");
+    return;
+  }
+
+  // 2. Send each unsynced customer to API
+  for (const dcr of unsyncedDcr) {
+    const payload = {
+      id: dcr.onlineId,
+      customer_id: dcr.customerOnlineId,
+      name: dcr.name,
+      dcr_date: dcr.dcrDate,
+      remarks: dcr.remarks,
+      sync_date: dcr.syncDate,
+    };
+
+    console.log("Sync DCR Payload: ", JSON.stringify(payload));
+
+    try {
+      const res = await axios(routes.dcrCreate, {
+        method: "POST", // or PUT if updating
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+          "X-API-KEY": `${medRepData[0]?.apiKey}`,
+          "X-API-APP-KEY": `${medRepData[0]?.salesOrderAppId}`,
+        },
+        data: JSON.stringify(payload),
+      });
+
+      if (res.status === 200) {
+        // 3. Mark as synced
+        const data = await res.data;
+
+        // update customers table
+        await db
+          .update(dailyCallRecords)
+          .set({ syncDate: nowDate, onlineId: data.id })
+          .where(eq(dailyCallRecords.id, dcr.id));
+
+        console.log(`✅ DCR #${dcr.id} synced`);
+      } else {
+        console.warn(`⚠️ Failed to sync customer ${dcr.id} (${res.status})`);
+      }
+    } catch (err) {
+      console.error(`❌ Sync error for customer ${dcr.id}:`, err);
+    }
+  }
+}
+
 export async function uploadCustomer(data: CustomersTableType) {
   try {
     const medRepData = await getMedRepData();
@@ -566,6 +690,7 @@ export async function syncDownData() {
   try {
     await syncCustomers();
     await syncItems();
+    await syncDcr();
     return await syncSalesOrder();
   } catch (error) {
     console.error(`❌ Sync error`, error);
@@ -578,5 +703,6 @@ export async function syncUpData() {
   try {
     await syncLocalCustomers();
     await syncLocalSalesOrders();
+    await syncLocalDcrs();
   } catch (error) {}
 }
