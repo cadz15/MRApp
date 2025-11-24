@@ -570,6 +570,8 @@ export async function syncLocalDcrs() {
     .from(dailyCallRecords)
     .where(eq(dailyCallRecords.syncDate, ""));
 
+  console.log(unsyncedDcr);
+
   if (unsyncedDcr.length === 0) {
     console.log("✅ No local dcrs to sync");
     return;

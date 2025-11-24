@@ -1,20 +1,28 @@
 import SyncingPage from "@/components/SyncingPage";
+import { getDB } from "@/OfflineDB/db";
+import { medrep } from "@/OfflineDB/schema";
 import {
   checkMedRep,
   syncCustomers,
+  syncDcr,
   syncItems,
   syncLocalCustomers,
   syncLocalDcrs,
   syncLocalSalesOrders,
   syncSalesOrder,
 } from "@/OfflineDB/sync";
+import { Entypo } from "@expo/vector-icons";
+import { eq } from "drizzle-orm";
 import { LinearGradient } from "expo-linear-gradient";
 import { useEffect, useRef, useState } from "react";
 import {
+  Alert,
   Animated,
   Easing,
+  Modal,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -31,6 +39,10 @@ export default function settings() {
   const [syncingValue, setSyncingValue] = useState(0);
   const [currentStep, setCurrentStep] = useState("Ready to sync");
   const [syncComplete, setSyncComplete] = useState(false);
+  const [showResetKey, setShowResetKey] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [newAppKey, setNewAppKey] = useState("");
+  const [isResetting, setIsResetting] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const buttonScale = useRef(new Animated.Value(1)).current;
 
@@ -66,6 +78,7 @@ export default function settings() {
     setSyncing(true);
     setSyncComplete(false);
     setSyncingValue(0);
+    setShowResetKey(false);
 
     try {
       setCurrentStep("Initializing sync...");
@@ -76,6 +89,7 @@ export default function settings() {
         setCurrentStep("Sync failed - tap to retry");
         setSyncingValue(0);
         setSyncing(false);
+        setShowResetKey(true);
         return;
       }
 
@@ -87,21 +101,26 @@ export default function settings() {
 
       setCurrentStep("Syncing items...");
       console.log("Syncing items...");
-      setSyncingValue(60);
+      setSyncingValue(50);
       await syncItems();
 
       setCurrentStep("Syncing sales orders...");
       console.log("Syncing sales orders...");
-      setSyncingValue(80);
+      setSyncingValue(70);
       await syncSalesOrder();
+
+      setCurrentStep("Syncing dcr...");
+      console.log("Syncing dcr...");
+      setSyncingValue(75);
+      await syncDcr();
 
       setCurrentStep("Syncing local data...");
       console.log("Syncing local customer...");
-      setSyncingValue(90);
+      setSyncingValue(80);
       await syncLocalCustomers();
 
       console.log("Syncing local sales order...");
-      setSyncingValue(94);
+      setSyncingValue(90);
       await syncLocalSalesOrders();
 
       console.log("Syncing local dcr...");
@@ -130,6 +149,62 @@ export default function settings() {
     if (currentStep === "Sync failed - tap to retry") {
       handleSyncPress();
     }
+  };
+
+  const handleResetAppKey = () => {
+    setShowModal(true);
+    setNewAppKey("");
+  };
+
+  const handleConfirmReset = async () => {
+    if (!newAppKey.trim()) {
+      Alert.alert("Error", "Please enter a valid App Key");
+      return;
+    }
+
+    setIsResetting(true);
+
+    try {
+      const db = await getDB();
+
+      // Update the medical representative's sales_order_app_id
+      await db
+        .update(medrep)
+        .set({
+          salesOrderAppId: newAppKey.trim(),
+          updatedAt: new Date().toISOString(),
+        })
+        .where(eq(medrep.id, 1)); // Assuming single medrep record with id 1
+
+      Alert.alert(
+        "Success",
+        "App Key has been reset successfully. Please sync your data again.",
+        [
+          {
+            text: "OK",
+            onPress: () => {
+              setShowResetKey(false);
+              setShowModal(false);
+              setNewAppKey("");
+              // Optionally trigger a sync after reset
+              setTimeout(() => {
+                handleSyncPress();
+              }, 1000);
+            },
+          },
+        ]
+      );
+    } catch (error) {
+      console.error("Error resetting app key:", error);
+      Alert.alert("Error", "Failed to reset App Key. Please try again.");
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
+  const handleCancelReset = () => {
+    setShowModal(false);
+    setNewAppKey("");
   };
 
   return (
@@ -172,6 +247,17 @@ export default function settings() {
                   </Text>
                 </View>
 
+                {showResetKey && (
+                  <TouchableOpacity
+                    style={styles.keyReset}
+                    onPress={handleResetAppKey}
+                  >
+                    <Text style={styles.lastSyncText}>
+                      <Entypo name="key" size={18} color="red" /> Reset
+                    </Text>
+                  </TouchableOpacity>
+                )}
+
                 {/* Sync Button */}
                 <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
                   <TouchableOpacity
@@ -209,6 +295,66 @@ export default function settings() {
               </View>
             </LinearGradient>
           </View>
+
+          {/* Reset App Key Modal */}
+          <Modal
+            visible={showModal}
+            transparent={true}
+            animationType="slide"
+            onRequestClose={handleCancelReset}
+          >
+            <View style={styles.modalOverlay}>
+              <View style={styles.modalContainer}>
+                <View style={styles.modalHeader}>
+                  <Text style={styles.modalTitle}>Reset App Key</Text>
+                  <Text style={styles.modalSubtitle}>
+                    Enter your new App Key to reset the connection
+                  </Text>
+                </View>
+
+                <View style={styles.inputContainer}>
+                  <Text style={styles.inputLabel}>New App Key</Text>
+                  <TextInput
+                    style={styles.textInput}
+                    value={newAppKey}
+                    onChangeText={setNewAppKey}
+                    placeholder="Enter new App Key..."
+                    placeholderTextColor="#94a3b8"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    editable={!isResetting}
+                  />
+                </View>
+
+                <View style={styles.modalButtons}>
+                  <TouchableOpacity
+                    style={[styles.modalButton, styles.cancelButton]}
+                    onPress={handleCancelReset}
+                    disabled={isResetting}
+                  >
+                    <Text style={styles.cancelButtonText}>Cancel</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[
+                      styles.modalButton,
+                      styles.confirmButton,
+                      (!newAppKey.trim() || isResetting) &&
+                        styles.disabledButton,
+                    ]}
+                    onPress={handleConfirmReset}
+                    disabled={!newAppKey.trim() || isResetting}
+                  >
+                    {isResetting ? (
+                      <Text style={styles.confirmButtonText}>Resetting...</Text>
+                    ) : (
+                      <Text style={styles.confirmButtonText}>Reset Key</Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </Modal>
         </View>
       )}
     </Animated.View>
@@ -271,9 +417,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
-    marginBottom: 40,
     borderWidth: 1,
     borderColor: "rgba(255, 255, 255, 0.2)",
+    marginBottom: 8,
+  },
+  keyReset: {
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.2)",
+    marginBottom: 20,
   },
   lastSyncText: {
     color: "white",
@@ -291,7 +446,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 16,
     elevation: 8,
-    marginBottom: 40,
+    marginVertical: 40,
   },
   retryButton: {
     shadowColor: "#ef4444",
@@ -312,25 +467,94 @@ const styles = StyleSheet.create({
     color: "rgba(255, 255, 255, 0.8)",
     fontSize: 14,
   },
-  featuresContainer: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    width: "100%",
-    marginTop: 20,
-  },
-  featureItem: {
-    alignItems: "center",
+  // Modal Styles
+  modalOverlay: {
     flex: 1,
-    paddingHorizontal: 8,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
   },
-  featureIcon: {
+  modalContainer: {
+    backgroundColor: "white",
+    borderRadius: 16,
+    padding: 24,
+    width: "100%",
+    maxWidth: 400,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  modalHeader: {
+    marginBottom: 24,
+  },
+  modalTitle: {
     fontSize: 24,
+    fontWeight: "bold",
+    color: "#1e293b",
+    marginBottom: 8,
+    textAlign: "center",
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    color: "#64748b",
+    textAlign: "center",
+    lineHeight: 20,
+  },
+  inputContainer: {
+    marginBottom: 24,
+  },
+  inputLabel: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#374151",
     marginBottom: 8,
   },
-  featureText: {
-    color: "rgba(255, 255, 255, 0.8)",
-    fontSize: 12,
-    textAlign: "center",
-    fontWeight: "500",
+  textInput: {
+    backgroundColor: "#f8fafc",
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    fontSize: 16,
+    color: "#1e293b",
+  },
+  modalButtons: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  cancelButton: {
+    backgroundColor: "#f1f5f9",
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+  },
+  confirmButton: {
+    backgroundColor: "#dc2626",
+  },
+  disabledButton: {
+    backgroundColor: "#9ca3af",
+  },
+  cancelButtonText: {
+    color: "#374151",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  confirmButtonText: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "600",
   },
 });

@@ -1,5 +1,6 @@
 import { getDcrTable } from "@/OfflineDB/dborm";
 import { dcrTableType } from "@/OfflineDB/tableTypes";
+import { sortByDcrDate } from "@/utils/sortDate";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "expo-router";
 import React, { useEffect, useState } from "react";
@@ -35,7 +36,7 @@ function DcrTable() {
   const focused = navigation.isFocused();
 
   const loadDcr = async () => {
-    const res = await getDcrTable();
+    const res = sortByDcrDate(await getDcrTable());
 
     setDcrList(res);
     setDcrFilteredList(res);
@@ -234,6 +235,7 @@ const styles = StyleSheet.create({
   },
   tableBody: {
     borderWidth: 1,
+    height: 270,
   },
   tableRow: {
     flexDirection: "row",

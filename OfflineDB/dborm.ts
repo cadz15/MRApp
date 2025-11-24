@@ -1,7 +1,7 @@
 import { CreateSalesOrderType } from "@/app/salesorder/[id]";
 import { routes } from "@/constants/Routes";
 import axios from "axios";
-import { and, desc, eq, notLike } from "drizzle-orm";
+import { and, desc, eq, notLike, sql } from "drizzle-orm";
 import { getDB } from "./db";
 import {
   customers,
@@ -245,7 +245,32 @@ export async function getDcrTable() {
   const db = await getDB();
 
   try {
-    const result = await db.select().from(dailyCallRecords);
+    const result = await db
+      .select()
+      .from(dailyCallRecords)
+      .orderBy(
+        desc(
+          sql`
+        date(
+          -- Day
+          substr(${dailyCallRecords.dcrDate},
+            instr(${dailyCallRecords.dcrDate}, ' ') + 1,
+            instr(${dailyCallRecords.dcrDate}, ',') - instr(${dailyCallRecords.dcrDate}, ' ') - 1
+          )
+          || ' ' ||
+          -- Month (remove period if exists)
+          replace(
+            substr(${dailyCallRecords.dcrDate}, 1, instr(${dailyCallRecords.dcrDate}, '.') - 1),
+            '.',
+            ''
+          )
+          || ' ' ||
+          -- Year
+          substr(${dailyCallRecords.dcrDate}, -4)
+        )
+      `
+        )
+      );
 
     if (result) {
       const data = result.map((r) => {
@@ -280,7 +305,7 @@ export async function setCustomer(data: CustomersTableType, onlineId = null) {
       remarks: data.remarks,
       s3License: data.s3License,
       s3Validity: data.s3Validity,
-      syncDate: onlineId ? new Date().toLocaleDateString() : null,
+      syncDate: onlineId ? new Date().toLocaleDateString() : "",
       deletedAt: "",
     });
 
@@ -304,7 +329,7 @@ export async function setDcr(data: dcrTableType, onlineId = null) {
       onlineId: onlineId,
       customerId: data.customerId,
       customerOnlineId: data.customerOnlineId,
-      syncDate: onlineId ? new Date().toLocaleDateString() : null,
+      syncDate: onlineId ? new Date().toLocaleDateString() : "",
     });
 
     return true;
