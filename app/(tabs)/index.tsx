@@ -299,8 +299,11 @@ export default function DashboardScreen() {
     </TouchableOpacity>
   );
 
-  const CalendarDay = ({ date, hasSchedule }) => {
-    const isToday = date.toDateString() === new Date().toDateString();
+  const CalendarDay = ({ date, hasSchedule, dateString }) => {
+    // Create today's date in the same format for comparison
+    const today = new Date();
+    const todayString = today.toISOString().split("T")[0];
+    const isToday = dateString === todayString;
 
     return (
       <TouchableOpacity
@@ -338,25 +341,44 @@ export default function DashboardScreen() {
     const lastDay = new Date(year, month + 1, 0);
     const days = [];
 
+    // Add empty days for padding
     for (let i = 0; i < firstDay.getDay(); i++) {
       days.push(null);
     }
 
+    // Create dates and match with API date format
     for (let i = 1; i <= lastDay.getDate(); i++) {
       const date = new Date(year, month, i);
-      const dateString = date.toISOString().split("T")[0];
-      const hasSchedule = analytics.schedules[dateString];
-      days.push({ date, hasSchedule: !!hasSchedule });
+
+      // Use local date format instead of ISO string to avoid timezone issues
+      const dateString = formatDateToYYYYMMDD(date);
+      const hasSchedule =
+        analytics.schedules && analytics.schedules[dateString];
+
+      days.push({
+        date,
+        hasSchedule: !!hasSchedule,
+        dateString,
+      });
     }
 
     return days;
   };
 
+  // Add this utility function to format dates without timezone issues
+  const formatDateToYYYYMMDD = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
   const ScheduleModal = () => {
     if (!selectedDate || !showScheduleModal) return null;
 
-    const dateString = selectedDate.toISOString().split("T")[0];
-    const schedules = analytics.schedules[dateString] || [];
+    const dateString = formatDateToYYYYMMDD(selectedDate);
+    const schedules =
+      (analytics.schedules && analytics.schedules[dateString]) || [];
 
     return (
       <View style={styles.modalOverlay}>
@@ -365,66 +387,166 @@ export default function DashboardScreen() {
             colors={["#667eea", "#764ba2"]}
             style={styles.modalHeader}
           >
-            <Text style={styles.modalTitle}>
-              Schedules for{" "}
-              {selectedDate.toLocaleDateString("en-US", {
-                weekday: "long",
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-              })}
+            <View style={styles.modalHeaderContent}>
+              <Text style={styles.modalTitle}>
+                Schedules for{" "}
+                {selectedDate.toLocaleDateString("en-US", {
+                  weekday: "long",
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                })}
+              </Text>
+              <TouchableOpacity
+                onPress={() => setShowScheduleModal(false)}
+                style={styles.closeButton}
+              >
+                <Ionicons name="close" size={24} color="white" />
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.scheduleCount}>
+              {schedules.length} event{schedules.length !== 1 ? "s" : ""}{" "}
+              scheduled
             </Text>
-            <TouchableOpacity
-              onPress={() => setShowScheduleModal(false)}
-              style={styles.closeButton}
-            >
-              <Ionicons name="close" size={24} color="white" />
-            </TouchableOpacity>
           </LinearGradient>
 
-          <ScrollView style={styles.scheduleList}>
-            {schedules.map((schedule) => (
-              <View key={schedule.id} style={styles.scheduleItem}>
-                <View
-                  style={[
-                    styles.scheduleIcon,
-                    {
-                      backgroundColor:
-                        schedule.type === "meeting"
-                          ? "#3b82f6"
-                          : schedule.type === "training"
-                          ? "#8b5cf6"
-                          : schedule.type === "review"
-                          ? "#f59e0b"
-                          : schedule.type === "visit"
-                          ? "#10b981"
-                          : "#ef4444",
-                    },
-                  ]}
-                >
-                  <Ionicons
-                    name={
-                      schedule.type === "meeting"
-                        ? "people"
-                        : schedule.type === "training"
-                        ? "school"
-                        : schedule.type === "review"
-                        ? "stats-chart"
-                        : schedule.type === "visit"
-                        ? "business"
-                        : "calendar"
-                    }
-                    size={16}
-                    color="white"
-                  />
+          <View style={styles.scheduleContainer}>
+            <ScrollView
+              style={styles.scheduleScrollView}
+              showsVerticalScrollIndicator={true}
+              contentContainerStyle={styles.scheduleContentContainer}
+            >
+              {schedules.length > 0 ? (
+                schedules.map((schedule) => (
+                  <View key={schedule.id} style={styles.scheduleCard}>
+                    {/* Schedule Header */}
+                    <View style={styles.scheduleHeader}>
+                      <View
+                        style={[
+                          styles.scheduleIcon,
+                          {
+                            backgroundColor:
+                              schedule.type === "meeting"
+                                ? "#3b82f6"
+                                : schedule.type === "training"
+                                ? "#8b5cf6"
+                                : schedule.type === "review"
+                                ? "#f59e0b"
+                                : schedule.type === "visit"
+                                ? "#10b981"
+                                : "#ef4444",
+                          },
+                        ]}
+                      >
+                        <Ionicons
+                          name={
+                            schedule.type === "meeting"
+                              ? "people"
+                              : schedule.type === "training"
+                              ? "school"
+                              : schedule.type === "review"
+                              ? "stats-chart"
+                              : schedule.type === "visit"
+                              ? "business"
+                              : "calendar"
+                          }
+                          size={20}
+                          color="white"
+                        />
+                      </View>
+                      <View style={styles.scheduleBasicInfo}>
+                        <Text style={styles.scheduleTitle}>
+                          {schedule.title}
+                        </Text>
+                        <View style={styles.timeContainer}>
+                          <Ionicons
+                            name="time-outline"
+                            size={14}
+                            color="#64748b"
+                          />
+                          <Text style={styles.scheduleTime}>
+                            {schedule.time}
+                          </Text>
+                        </View>
+                      </View>
+                    </View>
+
+                    {/* Event Description with Fixed Height Scroll */}
+                    {schedule.description && (
+                      <View style={styles.descriptionSection}>
+                        <Text style={styles.sectionLabel}>
+                          Event Description
+                        </Text>
+                        <View style={styles.descriptionBox}>
+                          <ScrollView
+                            style={styles.descriptionScrollView}
+                            nestedScrollEnabled={true}
+                            showsVerticalScrollIndicator={true}
+                          >
+                            <Text style={styles.descriptionText}>
+                              {schedule.description}
+                            </Text>
+                          </ScrollView>
+                        </View>
+                      </View>
+                    )}
+
+                    {/* Event Type Badge */}
+                    <View style={styles.eventTypeContainer}>
+                      <View
+                        style={[
+                          styles.eventTypeBadge,
+                          {
+                            backgroundColor:
+                              schedule.type === "meeting"
+                                ? "rgba(59, 130, 246, 0.1)"
+                                : schedule.type === "training"
+                                ? "rgba(139, 92, 246, 0.1)"
+                                : schedule.type === "review"
+                                ? "rgba(245, 158, 11, 0.1)"
+                                : schedule.type === "visit"
+                                ? "rgba(16, 185, 129, 0.1)"
+                                : "rgba(239, 68, 68, 0.1)",
+                          },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.eventTypeText,
+                            {
+                              color:
+                                schedule.type === "meeting"
+                                  ? "#3b82f6"
+                                  : schedule.type === "training"
+                                  ? "#8b5cf6"
+                                  : schedule.type === "review"
+                                  ? "#f59e0b"
+                                  : schedule.type === "visit"
+                                  ? "#10b981"
+                                  : "#ef4444",
+                            },
+                          ]}
+                        >
+                          {schedule.type.charAt(0).toUpperCase() +
+                            schedule.type.slice(1)}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+                ))
+              ) : (
+                <View style={styles.noSchedules}>
+                  <Ionicons name="calendar-outline" size={64} color="#cbd5e1" />
+                  <Text style={styles.noSchedulesTitle}>
+                    No events scheduled
+                  </Text>
+                  <Text style={styles.noSchedulesText}>
+                    There are no events scheduled for this date.
+                  </Text>
                 </View>
-                <View style={styles.scheduleDetails}>
-                  <Text style={styles.scheduleTitle}>{schedule.title}</Text>
-                  <Text style={styles.scheduleTime}>{schedule.time}</Text>
-                </View>
-              </View>
-            ))}
-          </ScrollView>
+              )}
+            </ScrollView>
+          </View>
         </View>
       </View>
     );
@@ -829,6 +951,7 @@ export default function DashboardScreen() {
                       <CalendarDay
                         key={index}
                         date={day.date}
+                        dateString={day.dateString}
                         hasSchedule={day.hasSchedule}
                       />
                     ) : (
@@ -1178,15 +1301,12 @@ const styles = StyleSheet.create({
   modalContent: {
     backgroundColor: "white",
     borderRadius: 16,
-    width: "100%",
+    width: "90%",
     maxHeight: "80%",
     overflow: "hidden",
   },
   modalHeader: {
     padding: 20,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
   },
   modalTitle: {
     fontSize: 18,
@@ -1197,6 +1317,132 @@ const styles = StyleSheet.create({
   closeButton: {
     padding: 4,
   },
+  scheduleIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  scheduleTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#1e293b",
+    marginBottom: 4,
+  },
+  scheduleTime: {
+    fontSize: 14,
+    color: "#64748b",
+    marginLeft: 4,
+  },
+
+  modalHeaderContent: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: 8,
+  },
+  scheduleCount: {
+    fontSize: 14,
+    color: "rgba(255, 255, 255, 0.9)",
+    marginTop: 4,
+  },
+
+  scheduleContainer: {},
+  scheduleScrollView: {
+    height: "70%",
+    maxHeight: 500,
+  },
+  scheduleContentContainer: {
+    padding: 16,
+    paddingBottom: 20,
+  },
+  scheduleCard: {
+    backgroundColor: "white",
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  scheduleHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    marginBottom: 12,
+  },
+  scheduleBasicInfo: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  timeContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 4,
+  },
+  sectionLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#374151",
+    marginBottom: 8,
+  },
+  descriptionSection: {
+    marginTop: 12,
+    marginBottom: 12,
+  },
+  descriptionBox: {
+    backgroundColor: "#f8fafc",
+    borderRadius: 8,
+    padding: 12,
+    borderLeftWidth: 3,
+    borderLeftColor: "#3b82f6",
+    maxHeight: 200, // Fixed height for description scroll area
+  },
+  descriptionScrollView: {
+    height: "60%",
+  },
+  descriptionText: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: "#4b5563",
+  },
+  eventTypeContainer: {
+    flexDirection: "row",
+    justifyContent: "flex-start",
+  },
+  eventTypeBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  eventTypeText: {
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  noSchedules: {
+    padding: 40,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  noSchedulesTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#64748b",
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  noSchedulesText: {
+    fontSize: 14,
+    color: "#94a3b8",
+    textAlign: "center",
+    lineHeight: 20,
+  },
+
   scheduleList: {
     maxHeight: 400,
   },
@@ -1207,27 +1453,11 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#f1f5f9",
   },
-  scheduleIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 12,
-  },
+
   scheduleDetails: {
     flex: 1,
   },
-  scheduleTitle: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#1e293b",
-    marginBottom: 2,
-  },
-  scheduleTime: {
-    fontSize: 12,
-    color: "#64748b",
-  },
+
   // Add to your existing StyleSheet
   skeletonCard: {
     backgroundColor: "#e2e8f0",
