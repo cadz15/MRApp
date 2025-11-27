@@ -7,6 +7,7 @@ import {
   getSalesOrder,
 } from "@/OfflineDB/dborm";
 import { items, salesOrderItems } from "@/OfflineDB/schema";
+import { syncLocalCustomers, syncLocalSalesOrders } from "@/OfflineDB/sync";
 import {
   CustomersTableType,
   salesOrderTableType,
@@ -85,6 +86,11 @@ const AppTable = () => {
   };
 
   async function loadSalesOrder() {
+    try {
+      await syncLocalCustomers();
+      await syncLocalSalesOrders();
+    } catch (error) {}
+
     const latestSalesOrder = await getSalesListTable();
 
     // console.log(latestSalesOrder);

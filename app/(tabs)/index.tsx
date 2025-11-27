@@ -5,6 +5,7 @@ import React, { useEffect, useRef, useState } from "react";
 import {
   Animated,
   Dimensions,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -165,6 +166,7 @@ export default function DashboardScreen() {
   const [activeChart, setActiveChart] = useState("line");
   const [isLoading, setIsLoading] = useState(true);
   const [analytics, setAnalytics] = useState(SAMPLE_DATA);
+  const [isRefreshing, setIsRefreshing] = useState(true);
 
   const scrollY = useRef(new Animated.Value(0)).current;
 
@@ -653,12 +655,15 @@ export default function DashboardScreen() {
       if (res !== 401 || res !== 500) {
         setAnalytics(res.analytics);
         setIsLoading(false);
+        setIsRefreshing(false);
       }
     };
 
     console.log(analytics);
 
-    simulateAPIFetch();
+    if (isRefreshing) {
+      simulateAPIFetch();
+    }
   }, []);
 
   return (
@@ -667,6 +672,12 @@ export default function DashboardScreen() {
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
         scrollEventThrottle={16}
+        refreshControl={
+          <RefreshControl
+            onRefresh={() => setIsRefreshing(true)}
+            refreshing={isRefreshing}
+          />
+        }
       >
         <Animated.View style={[styles.header, { opacity: headerOpacity }]}>
           <LinearGradient
@@ -847,14 +858,14 @@ export default function DashboardScreen() {
                   {/* <Text style={styles.seeAllText}>See All</Text> */}
                 </TouchableOpacity>
               </View>
-              <View style={styles.notificationsList}>
+              <ScrollView style={styles.notificationsList}>
                 {analytics.notifications.map((notification) => (
                   <NotificationCard
                     key={notification.id}
                     notification={notification}
                   />
                 ))}
-              </View>
+              </ScrollView>
             </View>
           </>
         )}
@@ -1111,6 +1122,7 @@ const styles = StyleSheet.create({
   },
   notificationsList: {
     gap: 12,
+    height: "40%",
   },
   notificationCard: {
     backgroundColor: "#f8fafc",
