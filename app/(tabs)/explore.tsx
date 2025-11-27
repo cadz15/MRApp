@@ -79,7 +79,7 @@ export default function TabTwoScreen() {
         .from(salesOrders)
         .where(
           and(
-            eq(salesOrders.medicalRepresentativeId, medrep[0].id),
+            eq(salesOrders.medicalRepresentativeId, medrep[0].onlineId),
             like(salesOrders.dateSold, `${currentMonth}%${currentYear}`)
           )
         );
@@ -93,7 +93,7 @@ export default function TabTwoScreen() {
           .from(salesOrders)
           .where(
             and(
-              eq(salesOrders.medicalRepresentativeId, medrep[0].id),
+              eq(salesOrders.medicalRepresentativeId, medrep[0].onlineId),
               like(salesOrders.dateSold, `${currentMonth}%${currentYear}`)
             )
           )
@@ -115,7 +115,7 @@ export default function TabTwoScreen() {
           eq(salesOrderItems.salesOrderOfflineId, salesOrders.id)
         )
         .innerJoin(items, eq(salesOrderItems.itemId, items.id))
-        .where(eq(salesOrders.medicalRepresentativeId, medrep[0].id))
+        .where(eq(salesOrders.medicalRepresentativeId, medrep[0].onlineId))
         .groupBy(items.productType)
         .orderBy(desc(sum(salesOrderItems.quantity)))
         .limit(1);

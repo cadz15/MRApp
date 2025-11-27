@@ -123,7 +123,7 @@ export default function AnalyticsPage() {
           year: sql`CAST(substr(${salesOrders.dateSold}, -4) AS INT)`,
         })
         .from(salesOrders)
-        .where(eq(salesOrders.medicalRepresentativeId, medrep[0].id))
+        .where(eq(salesOrders.medicalRepresentativeId, medrep[0].onlineId))
         .groupBy(sql`substr(${salesOrders.dateSold}, -4)`)
         .orderBy(sql`substr(${salesOrders.dateSold}, -4)`);
 
@@ -176,7 +176,7 @@ export default function AnalyticsPage() {
       // Get all analytics data
       const stats = await calculateStatistics(
         db,
-        medrep[0].id,
+        medrep[0].onlineId,
         currentYear,
         currentMonth
       );
@@ -184,7 +184,7 @@ export default function AnalyticsPage() {
 
       const salesData = await getSalesPerYearData(
         db,
-        medrep[0].id,
+        medrep[0].onlineId,
         currentYear
       );
 
@@ -192,28 +192,28 @@ export default function AnalyticsPage() {
 
       const productData = await getProductDistributionData(
         db,
-        medrep[0].id,
+        medrep[0].onlineId,
         currentYear
       );
       setProductDistributionData(productData);
 
       const topProductsData = await getTopProducts(
         db,
-        medrep[0].id,
+        medrep[0].onlineId,
         currentYear
       );
       setTopProducts(topProductsData);
 
       const topCustomersData = await getTopCustomers(
         db,
-        medrep[0].id,
+        medrep[0].onlineId,
         currentYear
       );
       setTopCustomers(topCustomersData);
 
       const dailyData = await getDailyPerformanceData(
         db,
-        medrep[0].id,
+        medrep[0].onlineId,
         currentYear
       );
       setDailyPerformance(dailyData);
