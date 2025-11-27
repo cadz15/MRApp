@@ -786,7 +786,7 @@ export default function DashboardScreen() {
     if (isRefreshing) {
       simulateAPIFetch();
     }
-  }, []);
+  }, [isRefreshing]);
 
   return (
     <View style={styles.container}>
@@ -1245,7 +1245,7 @@ const styles = StyleSheet.create({
   },
   notificationsList: {
     gap: 12,
-    height: "40%",
+    height: 300,
   },
   notificationCard: {
     backgroundColor: "#f8fafc",
