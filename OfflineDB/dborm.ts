@@ -100,6 +100,22 @@ export async function getCustomerFromDB(id: number) {
   }
 }
 
+export async function getSingleCustomerFromDB(id: number) {
+  const db = await getDB();
+
+  try {
+    const result = await db
+      .select()
+      .from(customers)
+      .where(and(eq(customers.id, id), eq(customers.deletedAt, "")));
+
+    return result[0];
+  } catch (err) {
+    console.error(`❌ Failed to fetch :`, err);
+    return null;
+  }
+}
+
 export async function getItemsFromDB(withS3: boolean) {
   const db = await getDB();
 

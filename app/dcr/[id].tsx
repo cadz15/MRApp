@@ -1,5 +1,5 @@
 import SignatureCapture from "@/components/Modal/SignatureCapture";
-import { getCustomerFromLocalDB } from "@/OfflineDB/dborm";
+import { getSingleCustomerFromDB } from "@/OfflineDB/dborm";
 import { uploadDcr } from "@/OfflineDB/sync";
 import { CustomersTableType } from "@/OfflineDB/tableTypes";
 import { router, useLocalSearchParams } from "expo-router";
@@ -97,7 +97,7 @@ const createDailyCall = () => {
 
   useEffect(() => {
     const loadCustomerData = async () => {
-      const res = await getCustomerFromLocalDB(parseInt(id));
+      const res = await getSingleCustomerFromDB(parseInt(id));
       setCustomerData(res);
 
       if (res) {

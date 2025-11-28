@@ -981,14 +981,16 @@ export default function DashboardScreen() {
                   {/* <Text style={styles.seeAllText}>See All</Text> */}
                 </TouchableOpacity>
               </View>
-              <ScrollView style={styles.notificationsList}>
-                {analytics.notifications.map((notification) => (
-                  <NotificationCard
-                    key={notification.id}
-                    notification={notification}
-                  />
-                ))}
-              </ScrollView>
+              <View style={styles.notificationsList}>
+                <View style={{ gap: 20 }}>
+                  {analytics.notifications.map((notification) => (
+                    <NotificationCard
+                      key={notification.id}
+                      notification={notification}
+                    />
+                  ))}
+                </View>
+              </View>
             </View>
           </>
         )}
@@ -1245,7 +1247,6 @@ const styles = StyleSheet.create({
   },
   notificationsList: {
     gap: 12,
-    height: 300,
   },
   notificationCard: {
     backgroundColor: "#f8fafc",

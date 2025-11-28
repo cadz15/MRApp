@@ -254,7 +254,10 @@ export async function syncSalesOrder() {
             dateSold: salesOrder.date_sold,
             total: salesOrder.total,
             remarks: salesOrder.remarks,
-            syncDate: salesOrder.sync_date ?? getNowDate(),
+            syncDate:
+              salesOrder.sync_date && salesOrder.syncDate !== ""
+                ? salesOrder.sync_date
+                : getNowDate(),
             status: salesOrder.status,
             createdAt: salesOrder.created_at,
             updatedAt: salesOrder.updated_at,
@@ -397,7 +400,7 @@ export async function syncLocalSalesOrders() {
     .from(salesOrders)
     .where(eq(salesOrders.syncDate, ""));
 
-  // console.log("unsynced orders: ", unsyncedOrders);
+  console.log("unsynced orders: ", unsyncedOrders);
 
   if (unsyncedOrders.length === 0) {
     console.log("✅ No local sales orders to sync");
