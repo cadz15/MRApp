@@ -65,6 +65,9 @@ const createDailyCall = () => {
     const newErrors: typeof errors = {};
     if (!form.name) newErrors.name = "Customer name is required";
     if (!form.practice) newErrors.practice = "Address is required";
+    if (!form.signature && !form.remarks)
+      newErrors.signature =
+        "Remarks is required if signature is not available.";
     return newErrors;
   };
 
